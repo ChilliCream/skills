@@ -1,0 +1,152 @@
+name: e2e-demo
+
+on:
+  push:
+    paths:
+      - 'src/Skillz/**'
+      - 'test/e2e/**'
+      - 'test/fixtures/sample-skills/**'
+      - 'Directory.Build.props'
+      - 'Directory.Packages.props'
+      - 'global.json'
+      - '.github/workflows/e2e-demo.yml'
+  pull_request:
+    paths:
+      - 'src/Skillz/**'
+      - 'test/e2e/**'
+      - 'test/fixtures/sample-skills/**'
+      - 'Directory.Build.props'
+      - 'Directory.Packages.props'
+      - 'global.json'
+      - '.github/workflows/e2e-demo.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: e2e-demo-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  record-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Record + verify all flows
+        id: record
+        continue-on-error: true
+        run: ./test/e2e/run.sh
+
+      - name: Upload snapshot artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skillz-e2e-snapshots
+          path: |
+            test/e2e/out/*.gif
+            test/e2e/out/report/**
+          if-no-files-found: warn
+
+      - name: Comment changed snapshots on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          RUN_ID: ${{ github.run_id }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pr = context.payload.pull_request;
+            const prNum = pr.number;
+            const baseRef = pr.base.ref;
+            const MARKER = '<!-- skillz-e2e-snapshots -->';
+            const bust = `?run=${process.env.RUN_ID}`;
+
+            const rawBase = `https://raw.githubusercontent.com/${pr.base.repo.full_name}/${pr.base.sha}`;
+            const headFull = pr.head.repo && pr.head.repo.full_name;
+            const rawHead = headFull
+              ? `https://raw.githubusercontent.com/${headFull}/${pr.head.sha}`
+              : null;
+
+            const files = await github.paginate(github.rest.pulls.listFiles,
+              { owner, repo, pull_number: prNum, per_page: 100 });
+            const re = /^test\/e2e\/([^/]+)-flow\.gif$/;
+            const changed = [];
+            for (const f of files) {
+              const m = f.filename.match(re);
+              if (m) changed.push(
+                { flow: m[1], status: f.status, path: f.filename, prev: f.previous_filename });
+            }
+            changed.sort((a, b) => a.flow.localeCompare(b.flow));
+
+            async function upsertComment(body) {
+              const { data: comments } = await github.rest.issues.listComments(
+                { owner, repo, issue_number: prNum, per_page: 100 });
+              const existing = comments.find(c => c.body && c.body.includes(MARKER));
+              if (existing) {
+                await github.rest.issues.updateComment(
+                  { owner, repo, comment_id: existing.id, body });
+              } else {
+                await github.rest.issues.createComment(
+                  { owner, repo, issue_number: prNum, body });
+              }
+            }
+
+            if (changed.length === 0) {
+              try {
+                await upsertComment(
+                  `${MARKER}\n✅ **E2E snapshots** — no flow recordings changed vs \`${baseRef}\`.`);
+              } catch (e) {
+                core.warning(`comment failed (expected on forks): ${e}`);
+              }
+              return;
+            }
+
+            const img = url => `<img src="${url}${bust}" width="480" alt="recording">`;
+            const ICON = { added: '🆕', removed: '🗑️' };
+
+            const blocks = [];
+            for (const { flow, status, path, prev } of changed) {
+              const before = `${rawBase}/${prev || path}`;
+              const after = rawHead ? `${rawHead}/${path}` : null;
+              let inner;
+              if (status === 'added') {
+                inner = after ? `\n\n${img(after)}\n` : '\n\n_after unavailable_\n';
+              } else if (status === 'removed') {
+                inner = `\n\n${img(before)}\n`;
+              } else {
+                const afterCell = after ? img(after) : '<em>unavailable</em>';
+                inner =
+                  `\n\n<table><tr><th>Before — <code>${baseRef}</code></th><th>After — this PR</th></tr>`
+                  + `<tr><td>${img(before)}</td><td>${afterCell}</td></tr></table>\n`;
+              }
+              blocks.push(
+                `<details><summary>${ICON[status] || '🔁'} ${flow} — ${status}</summary>${inner}</details>`);
+            }
+
+            const body = [
+              MARKER,
+              '### 🎬 E2E snapshots changed',
+              '',
+              `These flow recordings differ from \`${baseRef}\` (added, removed, or modified). `
+                + 'Expand each for the before/after.',
+              '',
+              ...blocks,
+              '',
+              `<sub>Run ${process.env.RUN_ID} · full set in the <b>skillz-e2e-snapshots</b> artifact.</sub>`,
+            ].join('\n');
+
+            try { await upsertComment(body); }
+            catch (e) { core.warning(`comment failed (expected on forks): ${e}`); }
+
+      - name: Fail if any flow drifted from its golden
+        if: always() && steps.record.outcome == 'failure'
+        run: |
+          echo "::error::E2E recordings drifted from their committed golden — review the skillz-e2e-snapshots artifact, then run ./test/e2e/run.sh --update <flow> if intended." >&2
+          exit 1

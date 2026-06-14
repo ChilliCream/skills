@@ -23,7 +23,8 @@
 #
 # Exit code: 0 if every recorded flow PASSed; 1 if any FAILed or was NEW (no
 # golden yet); 2 on usage/setup error; 3 if docker is unavailable. --update
-# always exits 0 on a successful recording.
+# exits 0 when every targeted flow recorded successfully, or 1 if any recording
+# failed (its golden is left unchanged).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -46,7 +47,7 @@ declare -A MARKERS=(
   [list]="Project Skills"
   [remove]="Successfully removed"
   [update]="No project skills to update."
-  [error]="Local path does not exist"
+  [error]="[skillz exit: 1]"
 )
 ALL_FLOWS=(add copy global init list remove update error)
 
@@ -74,8 +75,9 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 # 1. Publish a self-contained linux-x64 binary (glibc — matches the Debian-based
-#    VHS image). Skip if already present unless REBUILD=1.
-if [[ ! -x "$BIN_DIR/skillz" || "${REBUILD:-0}" == "1" ]]; then
+#    VHS image). Skip if already present unless REBUILD=1 or --update — an update
+#    must never bake a stale binary's output into the committed goldens.
+if [[ ! -x "$BIN_DIR/skillz" || "${REBUILD:-0}" == "1" || "$UPDATE" == "1" ]]; then
   echo "==> publishing skillz (linux-x64, self-contained)"
   dotnet publish "$REPO_ROOT/src/Skillz/Skillz.csproj" \
     -c Release -f net10.0 -r linux-x64 --self-contained \
@@ -103,26 +105,53 @@ for flow in "${FLOWS[@]}"; do
   fi
 
   # 2. Record. The tape writes <flow>-flow.gif + <flow>-flow.txt into OUT_DIR
-  #    (mounted as the VHS workdir at /vhs).
+  #    (mounted as the VHS workdir at /vhs). A single flow's failure (docker/VHS
+  #    error, or a Wait sentinel that times out) must NOT abort the batch under
+  #    `set -e`: capture it, record the flow as FAIL, and carry on to the rest.
   echo "==> recording ${flow}-flow"
-  docker run --rm --shm-size=512m \
-    -v "$REPO_ROOT":/src:ro \
-    -v "$OUT_DIR":/vhs \
-    "$VHS_IMAGE" "/src/test/e2e/${flow}-flow.tape"
+  rec_ok=1
+  if ! docker run --rm --shm-size=512m \
+      -v "$REPO_ROOT":/src:ro \
+      -v "$OUT_DIR":/vhs \
+      "$VHS_IMAGE" "/src/test/e2e/${flow}-flow.tape"; then
+    rec_ok=0
+    echo "    recording FAILED (docker/VHS error)" >&2
+  fi
 
   # 3. Reduce the multi-frame capture to the deterministic final frame.
-  bash "$SCRIPT_DIR/extract-frame.sh" "$OUT_DIR/${flow}-flow.txt" "${MARKERS[$flow]}" > "$frame"
+  #    extract-frame.sh exits non-zero if the capture is missing/empty or the
+  #    success marker never appeared; treat that as a failed recording too.
+  extract_ok=0
+  if [[ "$rec_ok" == "1" ]] \
+      && bash "$SCRIPT_DIR/extract-frame.sh" "$OUT_DIR/${flow}-flow.txt" "${MARKERS[$flow]}" > "$frame"; then
+    extract_ok=1
+  else
+    : > "$frame"
+    echo "    frame extraction FAILED (empty capture or missing marker '${MARKERS[$flow]}')" >&2
+  fi
+  recorded_ok=0
+  if [[ "$extract_ok" == "1" && -s "$frame" ]]; then
+    recorded_ok=1
+  fi
 
   # 4. Update or verify.
   if [[ "$UPDATE" == "1" ]]; then
-    cp "$frame" "$golden"
-    cp "$OUT_DIR/${flow}-flow.gif" "$SCRIPT_DIR/${flow}-flow.gif"
-    echo "    updated golden + GIF"
-    SUMMARY+=("$flow UPDATED")
+    if [[ "$recorded_ok" == "1" ]]; then
+      cp "$frame" "$golden"
+      cp "$OUT_DIR/${flow}-flow.gif" "$SCRIPT_DIR/${flow}-flow.gif"
+      echo "    updated golden + GIF"
+      SUMMARY+=("$flow UPDATED")
+    else
+      overall=1
+      echo "    NOT updated — recording failed, golden left unchanged" >&2
+      SUMMARY+=("$flow FAILED")
+    fi
     continue
   fi
 
-  if [[ ! -f "$golden" ]]; then
+  if [[ "$recorded_ok" != "1" ]]; then
+    status=FAIL
+  elif [[ ! -f "$golden" ]]; then
     status=NEW
   elif diff -u "$golden" "$frame" > "$REPORT_DIR/${flow}-flow.diff" 2>&1; then
     status=PASS

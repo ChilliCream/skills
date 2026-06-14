@@ -24,7 +24,7 @@ Type `export PATH=/src/test/e2e/bin:$PATH` Enter
 Type `cd /tmp && rm -rf work && mkdir work && cd work` Enter
 Type `cp -r /src/test/fixtures/sample-skills .` Enter
 Type `skillz add ./sample-skills -y` Enter
-Sleep 1800ms
+Wait+Screen@30s /Done/
 Type `clear` Enter
 Show
 

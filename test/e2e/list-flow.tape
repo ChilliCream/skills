@@ -16,13 +16,16 @@ Set TypingSpeed 50ms
 Set CursorBlink false
 
 # --- setup (hidden): install one skill so `list` has something to show ---
+# HOME is pinned to a dir distinct from the cwd so the listed path renders as the
+# cwd-relative form (./.claude/...) deterministically, not the container's HOME.
 Hide
 Type `export PS1="$ "` Enter
 Type `export PATH=/src/test/e2e/bin:$PATH` Enter
+Type `export HOME=/tmp/home && mkdir -p /tmp/home` Enter
 Type `cd /tmp && rm -rf work && mkdir work && cd work` Enter
 Type `cp -r /src/test/fixtures/sample-skills .` Enter
 Type `skillz add ./sample-skills --agent claude-code --skill commit-helper -y` Enter
-Sleep 1500ms
+Wait+Screen@30s /Done/
 Type `clear` Enter
 Show
 

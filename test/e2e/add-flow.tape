@@ -21,10 +21,13 @@ Set CursorBlink false
 
 # --- setup (hidden from the recording) ---
 # Clean prompt, put the published binary on PATH, work in a throwaway dir so the
-# install writes under /tmp (never into the mounted source tree).
+# install writes under /tmp (never into the mounted source tree). Pin HOME to a
+# dedicated dir so the agent picker's persisted last-selection (read from
+# $HOME/.local/share/skillz) is hermetic — not inherited from the recording host.
 Hide
 Type `export PS1="$ "` Enter
 Type `export PATH=/src/test/e2e/bin:$PATH` Enter
+Type `export HOME=/tmp/home && mkdir -p /tmp/home` Enter
 Type `cd /tmp && rm -rf work && mkdir work && cd work` Enter
 Type `cp -r /src/test/fixtures/sample-skills .` Enter
 Type `clear` Enter

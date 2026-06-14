@@ -1,7 +1,8 @@
 # End-to-end recording of an error path: `skillz add` on a missing local source.
 #
-# Validates the failure UX end to end — the logo, the resolved Source line, and
-# the error message (written to stderr, exit code 1). Hermetic: the path simply
+# Validates the failure UX end to end — the logo, the resolved Source line, the
+# error message (written to stdout via the interaction service), and the non-zero
+# exit code (asserted by echoing $? into the recording). Hermetic: the path simply
 # does not exist. Produces error-flow.gif + error-flow.txt.
 
 Output error-flow.gif
@@ -26,7 +27,14 @@ Show
 # --- the demo ---
 Type `skillz add ./missing` Enter
 
+# Assert the failure UX *and* the non-zero exit: echo $? straight after the
+# command (no command runs in between, so $? is still skillz's) so the golden
+# pins "exit: 1". A regression that prints the error but exits 0 would change
+# this line — caught by the diff, and by the marker ([skillz exit: 1]) too.
 Wait+Screen@30s /Local path does not exist/
-Sleep 1500ms
+Sleep 800ms
+Type `echo "[skillz exit: $?]"` Enter
+Wait+Screen@30s /skillz exit: 1/
+Sleep 1000ms
 Screenshot error-flow-final.png
 Sleep 500ms

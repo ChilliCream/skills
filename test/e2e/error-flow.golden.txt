@@ -10,4 +10,6 @@ $ skillz add ./missing
  \______/ |__/  \__/|__/|__/|__/|________/
 Source: /tmp/work/missing
 Local path does not exist: /tmp/work/missing
+$ echo "[skillz exit: $?]"
+[skillz exit: 1]
 $

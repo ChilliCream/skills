@@ -16,7 +16,7 @@ Found 3 skill(s)
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌─Installed 1 skill(s)────────────────────────────────────────────────────────────────────────┐
 │ ✓ commit-helper                                                                             │
-│   → /tmp/work/.claude/skills/commit-helper                                                  │
+│   → /tmp/home/.claude/skills/commit-helper                                                  │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 
 Done!  Review skills before use; they run with full agent permissions.

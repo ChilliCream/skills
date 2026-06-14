@@ -1,6 +1,6 @@
 ---
 name: changelog-updater
-description: Maintain a Keep a Changelog file from merged pull requests.
+description: Maintain a Keep a Changelog-formatted changelog from merged pull requests.
 ---
 
 # Changelog Updater

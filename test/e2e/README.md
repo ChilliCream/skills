@@ -44,11 +44,12 @@ Each flow's tape is the source of truth; keep `MARKERS`/`ALL_FLOWS` in
                                                    └──▶ <flow>-flow.txt ──▶ extract-frame.sh ──▶ diff vs golden
 ```
 
-1. **`<flow>-flow.tape`** is a VHS script. Interactive flows gate each keystroke
-   on a `Wait+Screen /.../` sentinel, so the recording syncs on **state**, not
-   wall-clock timing (no flaky `Sleep`s). A hidden setup block puts the published
-   binary on `PATH`, works in a throwaway `/tmp/work`, and (for `list`/`remove`/
-   `update`) pre-installs fixtures so the demo has real state.
+1. **`<flow>-flow.tape`** is a VHS script. Interactive flows gate key transitions
+   on `Wait+Screen /.../` sentinels, so the recording syncs on **state** rather
+   than wall-clock timing (short `Sleep`s are still used to let the UI settle).
+   A hidden setup block puts the published binary on `PATH`, works in a throwaway
+   `/tmp/work`, and (for `list`/`remove`/`update`) pre-installs fixtures so the
+   demo has real state.
 2. **`run.sh`** publishes a self-contained `linux-x64` binary once, then for each
    flow mounts the repo read-only into the pinned VHS container and records.
 3. **`extract-frame.sh`** reduces VHS's multi-frame `.txt` capture to the final

@@ -1,4 +1,4 @@
-$ skillz add ./sample-skills --agent claude-code --global --skill commit-helper -y
+$ skills add ./sample-skills --agent claude-code --global --skill commit-helper -y
 
   /$$$$$$  /$$       /$$ /$$ /$$
  /$$__  $$| $$      |__/| $$| $$

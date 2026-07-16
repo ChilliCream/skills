@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <PackAsTool>true</PackAsTool>
+    <SkillsToolPackageId Condition="'$(SkillsToolPackageId)' == ''">skills</SkillsToolPackageId>
+    <PackageId>$(SkillsToolPackageId)</PackageId>
+    <ToolCommandName>skills</ToolCommandName>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>ToolCommandName</_Parameter1>
+      <_Parameter2>$(ToolCommandName)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Skills/Skills.csproj" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="../../assets/icon.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

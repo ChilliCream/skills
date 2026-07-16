@@ -1,4 +1,4 @@
-$ skillz init my-skill
+$ skills init my-skill
 
   /$$$$$$  /$$       /$$ /$$ /$$
  /$$__  $$| $$      |__/| $$| $$
@@ -18,6 +18,6 @@ Next steps:
   2. Update the name and description in the frontmatter
 
 Publishing:
-  GitHub: Push to a repo, then skillz add <owner>/<repo>
-  URL:    Host the file, then skillz add https://example.com/my-skill/SKILL.md
+  GitHub: Push to a repo, then skills add <owner>/<repo>
+  URL:    Host the file, then skills add https://example.com/my-skill/SKILL.md
 $

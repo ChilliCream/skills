@@ -1,4 +1,4 @@
-# End-to-end recording of `skillz add` driving the real interactive TUI.
+# End-to-end recording of `skills add` driving the real interactive TUI.
 #
 # Produces two artifacts from ONE run:
 #   add-flow.gif  — animated demo for PRs / README (not asserted on)
@@ -23,7 +23,7 @@ Set CursorBlink false
 # Clean prompt, put the published binary on PATH, work in a throwaway dir so the
 # install writes under /tmp (never into the mounted source tree). Pin HOME to a
 # dedicated dir so the agent picker's persisted last-selection (read from
-# $HOME/.local/share/skillz) is hermetic — not inherited from the recording host.
+# $HOME/.local/share/skills) is hermetic — not inherited from the recording host.
 Hide
 Type `export PS1="$ "` Enter
 Type `export PATH=/src/test/e2e/bin:$PATH` Enter
@@ -34,7 +34,7 @@ Type `clear` Enter
 Show
 
 # --- the demo ---
-Type `skillz add ./sample-skills` Enter
+Type `skills add ./sample-skills` Enter
 
 # Skill multi-select: pick 2 of the 3 skills (leave changelog-updater off).
 Wait+Screen@30s /Select skills to install/

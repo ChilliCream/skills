@@ -1,0 +1,256 @@
+using Skills.Skills;
+using Xunit;
+
+namespace Skills.Tests.Skills;
+
+public class FrontmatterParserTests
+{
+    [Fact]
+    public void Parses_Valid_Frontmatter_With_Name_And_Description()
+    {
+        // Arrange
+        var raw = "---\nname: my-skill\ndescription: A test skill\n---\nSkill body content here.";
+
+        // Act
+        var result = FrontmatterParser.Parse(raw);
+
+        // Assert
+        Assert.Equal("my-skill", result.Data["name"]);
+        Assert.Equal("A test skill", result.Data["description"]);
+        Assert.Equal("Skill body content here.", result.Content);
+    }
+
+    [Fact]
+    public void Returns_Empty_Data_For_Content_Without_Frontmatter()
+    {
+        // Arrange
+        var raw = "Just plain content with no frontmatter.";
+
+        // Act
+        var result = FrontmatterParser.Parse(raw);
+
+        // Assert
+        Assert.Empty(result.Data);
+        Assert.Equal(raw, result.Content);
+    }
+
+    [Fact]
+    public void Handles_Crlf_Line_Endings()
+    {
+        // Arrange
+        var raw = "---\r\nname: my-skill\r\ndescription: A test\r\n---\r\nBody";
+
+        // Act
+        var result = FrontmatterParser.Parse(raw);
+
+        // Assert
+        Assert.Equal("my-skill", result.Data["name"]);
+        Assert.Equal("A test", result.Data["description"]);
+        Assert.Equal("Body", result.Content);
+    }
+
+    [Fact]
+    public void Handles_Empty_Yaml_Block()
+    {
+        // Arrange
+        var raw = "---\n\n---\nContent";
+
+        // Act
+        var result = FrontmatterParser.Parse(raw);
+
+        // Assert
+        Assert.Empty(result.Data);
+        Assert.Equal("Content", result.Content);
+    }
+
+    [Fact]
+    public void Handles_Content_After_Frontmatter()
+    {
+        // Arrange
+        var raw = "---\nname: test\n---\nLine 1\nLine 2\nLine 3";
+
+        // Act
+        var result = FrontmatterParser.Parse(raw);
+
+        // Assert
+        Assert.Equal("test", result.Data["name"]);
+        Assert.Equal("Line 1\nLine 2\nLine 3", result.Content);
+    }
+
+    [Fact]
+    public void Handles_No_Trailing_Newline_After_Closing_Delimiter()
+    {
+        // Arrange
+        var raw = "---\nname: test\n---";
+
+        // Act
+        var result = FrontmatterParser.Parse(raw);
+
+        // Assert
+        Assert.Equal("test", result.Data["name"]);
+        Assert.Equal("", result.Content);
+    }
+
+    [Fact]
+    public void Handles_Single_Newline_After_Closing_Delimiter()
+    {
+        // Arrange
+        var raw = "---\nname: test\n---\n";
+
+        // Act
+        var result = FrontmatterParser.Parse(raw);
+
+        // Assert
+        Assert.Equal("test", result.Data["name"]);
+        Assert.Equal("", result.Content);
+    }
+
+    [Fact]
+    public void Parses_Nested_Mapping_As_Dictionary_Of_Object_With_Scalars_As_Strings()
+    {
+        // Arrange
+        var raw = "---\nname: my-skill\nmetadata:\n  type: tool\n  internal: true\n---\nBody";
+
+        // Act
+        var result = FrontmatterParser.Parse(raw);
+
+        // Assert - the exact shape SkillDiscovery pattern-matches; boolean stays the
+        // string "true" because the internal-skill gate compares against "true".
+        var metadata = Assert.IsType<Dictionary<object, object>>(result.Data["metadata"]);
+        Assert.Equal("tool", metadata["type"]);
+        Assert.Equal("true", metadata["internal"]);
+    }
+
+    [Fact]
+    public void Parses_Sequence_As_List_Of_Object()
+    {
+        // Arrange
+        var raw = "---\ntags:\n  - alpha\n  - beta\n---\nBody";
+
+        // Act
+        var result = FrontmatterParser.Parse(raw);
+
+        // Assert
+        var tags = Assert.IsType<List<object>>(result.Data["tags"]);
+        Assert.Equal(new object[] { "alpha", "beta" }, tags);
+    }
+
+    [Fact]
+    public void Returns_Empty_Data_When_Frontmatter_Is_Not_A_Mapping()
+    {
+        // Arrange - a sequence where a mapping is expected
+        var raw = "---\n- just\n- a\n- list\n---\nBody";
+
+        // Act
+        var result = FrontmatterParser.Parse(raw);
+
+        // Assert
+        Assert.Empty(result.Data);
+        Assert.Equal("Body", result.Content);
+    }
+
+    [Fact]
+    public void Parses_Frontmatter_When_Preceded_By_Leading_Blank_Line()
+    {
+        // Arrange - editor artifact: a blank line before the opening fence
+        var raw = "\n---\nname: my-skill\ndescription: A test skill\n---\nBody";
+
+        // Act
+        var result = FrontmatterParser.Parse(raw);
+
+        // Assert
+        Assert.Equal("my-skill", result.Data["name"]);
+        Assert.Equal("A test skill", result.Data["description"]);
+        Assert.Equal("Body", result.Content);
+    }
+
+    [Fact]
+    public void Parses_Frontmatter_When_Preceded_By_Leading_Spaces()
+    {
+        // Arrange - editor artifact: spaces before the opening fence
+        var raw = "   ---\nname: my-skill\ndescription: A test skill\n---\nBody";
+
+        // Act
+        var result = FrontmatterParser.Parse(raw);
+
+        // Assert
+        Assert.Equal("my-skill", result.Data["name"]);
+        Assert.Equal("A test skill", result.Data["description"]);
+        Assert.Equal("Body", result.Content);
+    }
+
+    [Fact]
+    public void Parses_Frontmatter_When_Preceded_By_Mixed_Leading_Whitespace_With_Crlf()
+    {
+        // Arrange - several blank CRLF lines and spaces before the opening fence
+        var raw = "\r\n\r\n  ---\r\nname: my-skill\r\ndescription: A test\r\n---\r\nBody";
+
+        // Act
+        var result = FrontmatterParser.Parse(raw);
+
+        // Assert
+        Assert.Equal("my-skill", result.Data["name"]);
+        Assert.Equal("A test", result.Data["description"]);
+        Assert.Equal("Body", result.Content);
+    }
+
+    [Fact]
+    public void Parse_Should_Throw_When_Input_Exceeds_Size_Cap()
+    {
+        // Arrange - input one byte over the 1 MB cap. The size check runs before the parser,
+        // so this never reaches YAML processing.
+        var raw = new string('a', (1024 * 1024) + 1);
+
+        // Act / Assert
+        Assert.Throws<FormatException>(() => FrontmatterParser.Parse(raw));
+    }
+
+    [Fact]
+    public void Parse_Should_Throw_When_Alias_Expansion_Exceeds_Node_Count_Cap()
+    {
+        // Arrange - chained anchors where each level references the previous twice. Expansion
+        // doubles the node count per level, so a tiny document crosses the node cap. The counter
+        // throws once the bound is passed, before the full expansion is materialized.
+        var sb = new System.Text.StringBuilder();
+        sb.Append("---\n");
+        sb.Append("a0: &a0 [x, x]\n");
+        for (var i = 1; i <= 20; i++)
+        {
+            sb.Append($"a{i}: &a{i} [*a{i - 1}, *a{i - 1}]\n");
+        }
+
+        sb.Append("---\nBody");
+        var raw = sb.ToString();
+
+        // Act / Assert
+        Assert.Throws<FormatException>(() => FrontmatterParser.Parse(raw));
+    }
+
+    [Fact]
+    public void Parse_Should_Throw_When_Nesting_Depth_Exceeds_Bound()
+    {
+        // Arrange - several hundred nested sequences, well beyond the depth bound but far below
+        // any level that would overflow the stack of the test process.
+        const int levels = 300;
+        var raw = "---\nd: " + new string('[', levels) + new string(']', levels) + "\n---\nBody";
+
+        // Act / Assert - the guard throws the same way malformed YAML would, which the call site
+        // degrades to "skip this skill".
+        Assert.Throws<FormatException>(() => FrontmatterParser.Parse(raw));
+    }
+
+    [Fact]
+    public void Returns_Empty_Data_When_Triple_Dash_Appears_Only_In_Body()
+    {
+        // Arrange - no opening fence; '---' is real content mid-document and must NOT be
+        // mistaken for frontmatter (the text before it is not whitespace).
+        var raw = "Some intro text.\n---\nname: not-frontmatter\n---\nMore body";
+
+        // Act
+        var result = FrontmatterParser.Parse(raw);
+
+        // Assert
+        Assert.Empty(result.Data);
+        Assert.Equal(raw, result.Content);
+    }
+}

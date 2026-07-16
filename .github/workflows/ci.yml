@@ -39,4 +39,4 @@ jobs:
         run: dotnet test --no-build -c Release --verbosity normal
 
       - name: AOT Publish
-        run: dotnet publish src/Skillz/Skillz.csproj -c Release -f net10.0 -r ${{ matrix.rid }} --self-contained
+        run: dotnet publish src/Skills/Skills.csproj -c Release -f net10.0 -r ${{ matrix.rid }} --self-contained

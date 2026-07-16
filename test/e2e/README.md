@@ -1,6 +1,6 @@
 # End-to-end terminal recordings (VHS)
 
-This directory drives the **real `skillz` binary through its TUI** — one
+This directory drives the **real `skills` binary through its TUI** — one
 [VHS](https://github.com/charmbracelet/vhs) tape per command flow — and produces
 two artifacts per flow from a single recording:
 
@@ -9,13 +9,13 @@ two artifacts per flow from a single recording:
 | `<flow>-flow.gif` | Animated demo for PRs / README |
 | `<flow>-flow.golden.txt` | Final-frame text snapshot, diffed in CI as an integration test |
 
-![skillz add — interactive flow](add-flow.gif)
+![skills add — interactive flow](add-flow.gif)
 
 The same recording is both the demo *and* the assertion: one tape, one run.
 
 ## Why a recording (we already have snapshot tests)
 
-The in-process tests (`Skillz.Tests`) drive the prompts through Spectre's
+The in-process tests (`Skills.Tests`) drive the prompts through Spectre's
 `TestConsole` — fast and deterministic, but they never exercise the *compiled*
 binary: `Program.cs`, DI wiring, `System.CommandLine` parsing, or real terminal
 rendering. This tier does, end to end, through a real PTY. It is the slow,
@@ -90,13 +90,13 @@ Two independent runs produce a **byte-identical** final frame. The levers:
 - **Hermetic inputs**: a local fixture (no network), a fixed `/tmp/work` cwd, and a
   pinned `$HOME` where it appears in output, so every path is constant. A clean
   container has no agent env (`AI_AGENT`, `CLAUDECODE`, …) and no agent config, so
-  skillz renders the real interactive prompts with stable defaults.
+  skills renders the real interactive prompts with stable defaults.
 - **One skill where order matters.** The install report lists skills in discovery
   order (filesystem-dependent), so the non-interactive `copy`/`global`/`list` flows
   pin a single skill with `--skill`. `remove` lists skills sorted, and `update`
   never enumerates local skills, so those use all three fixtures.
 
-If skillz legitimately changes its output (e.g. a new universal agent), the diff
+If skills legitimately changes its output (e.g. a new universal agent), the diff
 fails — that's the test working. Re-run with `--update <flow>` and commit the new
 golden + GIF.
 
@@ -106,7 +106,7 @@ The [`e2e-demo`](../../.github/workflows/e2e-demo.yml) workflow records and veri
 every flow on pushes and PRs that touch the CLI, the tapes, or the fixtures, and:
 
 - **Uploads** all GIFs plus `out/report/**` (changed frames, diffs, per-flow status)
-  as the `skillz-e2e-snapshots` build artifact.
+  as the `skills-e2e-snapshots` build artifact.
 - On a **PR**, posts a single collapsed comment — one expandable `<details>` per
   flow that **changed** (🔴) or is **new** (🆕) — with the recording inline. The
   GIFs are hosted on an `e2e-snapshots` side branch so GitHub renders them in the

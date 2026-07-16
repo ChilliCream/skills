@@ -1,4 +1,4 @@
-$ skillz add ./sample-skills
+$ skills add ./sample-skills
 
   /$$$$$$  /$$       /$$ /$$ /$$
  /$$__  $$| $$      |__/| $$| $$

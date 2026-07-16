@@ -1,4 +1,4 @@
-# End-to-end recording of `skillz update` (interactive update check).
+# End-to-end recording of `skills update` (interactive update check).
 #
 # Hidden setup installs the three sample skills from a LOCAL source (so the lock
 # records them) — local skills are never network-checked, which keeps the flow
@@ -23,13 +23,13 @@ Type `export PS1="$ "` Enter
 Type `export PATH=/src/test/e2e/bin:$PATH` Enter
 Type `cd /tmp && rm -rf work && mkdir work && cd work` Enter
 Type `cp -r /src/test/fixtures/sample-skills .` Enter
-Type `skillz add ./sample-skills -y` Enter
+Type `skills add ./sample-skills -y` Enter
 Wait+Screen@30s /Done/
 Type `clear` Enter
 Show
 
 # --- the demo ---
-Type `skillz update` Enter
+Type `skills update` Enter
 
 # Scope picker (single-select): default is Project; arrow down twice to Both.
 Wait+Screen@30s /Update scope/

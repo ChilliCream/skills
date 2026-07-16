@@ -1,4 +1,4 @@
-# End-to-end recording of `skillz add -g` (global scope install).
+# End-to-end recording of `skills add -g` (global scope install).
 #
 # Non-interactive (--agent + --skill + -y skip every prompt; -g skips the scope
 # prompt). Validates the global install path — skills land under $HOME rather
@@ -33,7 +33,7 @@ Type `clear` Enter
 Show
 
 # --- the demo ---
-Type `skillz add ./sample-skills --agent claude-code --global --skill commit-helper -y` Enter
+Type `skills add ./sample-skills --agent claude-code --global --skill commit-helper -y` Enter
 
 Wait+Screen@30s /Done/
 Sleep 1800ms

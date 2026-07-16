@@ -1,22 +1,25 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="Skillz" width="120" height="120" />
+  <img src="assets/logo.svg" alt="Skills" width="120" height="120" />
 </p>
 
-# Skillz
+# Skills
 
 A CLI for managing AI agent skills - markdown `SKILL.md` files with YAML
 frontmatter that teach AI coding agents how to do specific tasks.
 
 ```bash
 # One-shot run, no install (.NET 10+ SDK)
-dnx skillz add chillicream/agent-skills
+dnx skills add chillicream/agent-skills
 
 # Or persistent install
+dotnet tool install -g skills
 dotnet tool install -g skillz
 ```
 
+Both NuGet packages expose the same `skills` command.
+
 End-user documentation - including the full `dnx` reference - lives in
-[`src/Skillz.Tool/README.md`](src/Skillz.Tool/README.md) and is what ships on
+[`src/Skills.Tool/README.md`](src/Skills.Tool/README.md) and is what ships on
 NuGet.
 
 ## What it does
@@ -27,23 +30,23 @@ NuGet.
 - Symlinks by default from one canonical location so all agents stay in sync;
   `--copy` for agents that don't follow symlinks
 - Two scopes: project (`skills-lock.json` in cwd) and global (XDG state dir)
-- Scaffolds new skills with `skillz init`
+- Scaffolds new skills with `skills init`
 
 ## Repository layout
 
 ```
 src/
-  Skillz/           Main CLI assembly (AOT-publishable binary)
-  Skillz.Tool/      `dotnet tool` wrapper that ships as the `skillz` NuGet package
+  Skills/           Main CLI assembly (AOT-publishable binary)
+  Skills.Tool/      `dotnet tool` wrapper for the `skills` and `skillz` NuGet packages
 test/
-  Skillz.Tests/     Unit tests
-  Skillz.SmokeTests/ End-to-end smoke tests
-Skillz.sln          Solution
+  Skills.Tests/     Unit tests
+  Skills.SmokeTests/ End-to-end smoke tests
+Skills.sln          Solution
 global.json         .NET SDK pin
 ```
 
-`Skillz.Tool` is a thin wrapper that calls into `Skillz.Program.Main`. It exists
-so `dotnet tool install -g skillz` works while `Skillz` itself can also be
+`Skills.Tool` is a thin wrapper that calls into `Skills.Program.Main`. It exists
+so `dotnet tool install -g skills` and `dotnet tool install -g skillz` both expose the `skills` command while `Skills` itself can also be
 AOT-published as a standalone binary for the supported runtime identifiers
 (`linux-x64`, `linux-arm64`, `linux-musl-x64`, `osx-x64`, `osx-arm64`, `win-x64`,
 `win-arm64`).
@@ -65,25 +68,29 @@ dotnet test
 ## Run locally
 
 ```bash
-dotnet run --project src/Skillz -- add anthropics/skills
+dotnet run --project src/Skills -- add anthropics/skills
 ```
 
 ## Publish AOT
 
 ```bash
-dotnet publish src/Skillz -c Release -r linux-x64
+dotnet publish src/Skills -c Release -r linux-x64
 ```
 
-Produces a single self-contained `skillz` binary at
-`src/Skillz/bin/Release/<tfm>/linux-x64/publish/skillz`.
+Produces a single self-contained `skills` binary at
+`src/Skills/bin/Release/<tfm>/linux-x64/publish/skills`.
 
 ## Pack the tool
 
 ```bash
-dotnet pack src/Skillz.Tool -c Release -o ./artifacts
+for tool in skills skillz; do
+  dotnet pack src/Skills.Tool -c Release -o ./artifacts \
+    -p:SkillsToolPackageId="$tool"
+done
 ```
 
-Produces `artifacts/skillz.<version>.nupkg` ready for `dotnet nuget push`.
+Produces `artifacts/skills.<version>.nupkg` and
+`artifacts/skillz.<version>.nupkg`; both packages install the `skills` command.
 
 ## Contributing
 

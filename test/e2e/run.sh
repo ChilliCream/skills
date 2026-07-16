@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Record the skillz CLI flows with VHS and verify each against its golden frame.
+# Record the skills CLI flows with VHS and verify each against its golden frame.
 #
 #   ./run.sh                  record every flow, diff each final frame vs its golden (CI / test)
 #   ./run.sh --update         record every flow, overwrite goldens + committed GIFs (accept output)
@@ -47,7 +47,7 @@ declare -A MARKERS=(
   [list]="Project Skills"
   [remove]="Successfully removed"
   [update]="No project skills to update."
-  [error]="[skillz exit: 1]"
+  [error]="[skills exit: 1]"
 )
 ALL_FLOWS=(add copy global init list remove update error)
 
@@ -77,9 +77,9 @@ fi
 # 1. Publish a self-contained linux-x64 binary (glibc — matches the Debian-based
 #    VHS image). Skip if already present unless REBUILD=1 or --update — an update
 #    must never bake a stale binary's output into the committed goldens.
-if [[ ! -x "$BIN_DIR/skillz" || "${REBUILD:-0}" == "1" || "$UPDATE" == "1" ]]; then
-  echo "==> publishing skillz (linux-x64, self-contained)"
-  dotnet publish "$REPO_ROOT/src/Skillz/Skillz.csproj" \
+if [[ ! -x "$BIN_DIR/skills" || "${REBUILD:-0}" == "1" || "$UPDATE" == "1" ]]; then
+  echo "==> publishing skills (linux-x64, self-contained)"
+  dotnet publish "$REPO_ROOT/src/Skills/Skills.csproj" \
     -c Release -f net10.0 -r linux-x64 --self-contained \
     -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=false \
     -o "$BIN_DIR" >/dev/null

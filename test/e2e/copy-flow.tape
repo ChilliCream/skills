@@ -1,4 +1,4 @@
-# End-to-end recording of `skillz add --copy` (copy instead of symlink).
+# End-to-end recording of `skills add --copy` (copy instead of symlink).
 #
 # Non-interactive (--agent + --skill + -y skip every prompt). Validates the
 # copy install path and the "Copied:" summary label — the counterpart to
@@ -29,7 +29,7 @@ Type `clear` Enter
 Show
 
 # --- the demo ---
-Type `skillz add ./sample-skills --agent claude-code --copy --skill commit-helper -y` Enter
+Type `skills add ./sample-skills --agent claude-code --copy --skill commit-helper -y` Enter
 
 Wait+Screen@30s /Done/
 Sleep 1800ms

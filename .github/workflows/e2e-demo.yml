@@ -3,7 +3,7 @@ name: e2e-demo
 on:
   push:
     paths:
-      - 'src/Skillz/**'
+      - 'src/Skills/**'
       - 'test/e2e/**'
       - 'test/fixtures/sample-skills/**'
       - 'Directory.Build.props'
@@ -12,7 +12,7 @@ on:
       - '.github/workflows/e2e-demo.yml'
   pull_request:
     paths:
-      - 'src/Skillz/**'
+      - 'src/Skills/**'
       - 'test/e2e/**'
       - 'test/fixtures/sample-skills/**'
       - 'Directory.Build.props'
@@ -48,7 +48,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: skillz-e2e-snapshots
+          name: skills-e2e-snapshots
           path: |
             test/e2e/out/*.gif
             test/e2e/out/report/**
@@ -65,7 +65,7 @@ jobs:
             const pr = context.payload.pull_request;
             const prNum = pr.number;
             const baseRef = pr.base.ref;
-            const MARKER = '<!-- skillz-e2e-snapshots -->';
+            const MARKER = '<!-- skills-e2e-snapshots -->';
             const bust = `?run=${process.env.RUN_ID}`;
 
             const rawBase = `https://raw.githubusercontent.com/${pr.base.repo.full_name}/${pr.base.sha}`;
@@ -139,7 +139,7 @@ jobs:
               '',
               ...blocks,
               '',
-              `<sub>Run ${process.env.RUN_ID} · full set in the <b>skillz-e2e-snapshots</b> artifact.</sub>`,
+              `<sub>Run ${process.env.RUN_ID} · full set in the <b>skills-e2e-snapshots</b> artifact.</sub>`,
             ].join('\n');
 
             try { await upsertComment(body); }
@@ -148,5 +148,5 @@ jobs:
       - name: Fail if any flow drifted from its golden
         if: always() && steps.record.outcome == 'failure'
         run: |
-          echo "::error::E2E recordings drifted from their committed golden — review the skillz-e2e-snapshots artifact, then run ./test/e2e/run.sh --update <flow> if intended." >&2
+          echo "::error::E2E recordings drifted from their committed golden — review the skills-e2e-snapshots artifact, then run ./test/e2e/run.sh --update <flow> if intended." >&2
           exit 1

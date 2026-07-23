@@ -1,4 +1,4 @@
-# End-to-end recording of `skillz init` (scaffold a new skill).
+# End-to-end recording of `skills init` (scaffold a new skill).
 #
 # Non-interactive: writes <name>/SKILL.md and prints the next-steps summary.
 # Produces init-flow.gif (demo) + init-flow.txt (final-frame golden source).
@@ -23,7 +23,7 @@ Type `clear` Enter
 Show
 
 # --- the demo ---
-Type `skillz init my-skill` Enter
+Type `skills init my-skill` Enter
 
 Wait+Screen@30s /Initialized skill/
 Sleep 1500ms

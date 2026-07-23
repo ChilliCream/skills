@@ -1,4 +1,4 @@
-# End-to-end recording of `skillz remove` (interactive removal).
+# End-to-end recording of `skills remove` (interactive removal).
 #
 # Hidden setup installs the three sample skills. The demo then drives the real
 # interactive TUI: the multi-select picker (skills are listed sorted, so the
@@ -22,13 +22,13 @@ Type `export PS1="$ "` Enter
 Type `export PATH=/src/test/e2e/bin:$PATH` Enter
 Type `cd /tmp && rm -rf work && mkdir work && cd work` Enter
 Type `cp -r /src/test/fixtures/sample-skills .` Enter
-Type `skillz add ./sample-skills -y` Enter
+Type `skills add ./sample-skills -y` Enter
 Wait+Screen@30s /Done/
 Type `clear` Enter
 Show
 
 # --- the demo ---
-Type `skillz remove` Enter
+Type `skills remove` Enter
 
 # Multi-select: pick all three (sorted: changelog-updater, commit-helper, pr-describer).
 Wait+Screen@30s /Select skills to remove/

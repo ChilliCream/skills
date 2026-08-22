@@ -1,3 +1,4 @@
+using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Skills.Git;
 using Skills.Install;
@@ -8,6 +9,7 @@ using Skills.Plugins;
 using Skills.Skills;
 using Skills.Sources;
 using Skills.Tests.TestServices;
+using Skills.Utils;
 using Xunit;
 
 namespace Skills.Tests.Utils;
@@ -131,5 +133,25 @@ public class CliTestHelperTests
 
         // Assert
         Assert.True(confirm);
+    }
+
+    [Fact]
+    public async Task SetCommandExecutionContext_Resolves_The_Fake_During_A_Command_Invocation()
+    {
+        // Arrange
+        var provider = CliTestHelper.CreateServiceProvider();
+        var expected = provider.GetRequiredService<IFileStore>();
+        IFileStore? resolved = null;
+
+        var probe = new Command("probe");
+        probe.SetAction(_ => resolved = CommandExecutionContext.s_services.Value!.GetRequiredService<IFileStore>());
+
+        // Act
+        CliTestHelper.SetCommandExecutionContext(provider);
+        await probe.Parse([]).InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Same(expected, resolved);
+        Assert.IsType<FakeFileStore>(resolved);
     }
 }

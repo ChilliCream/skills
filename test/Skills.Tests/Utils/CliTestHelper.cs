@@ -111,6 +111,14 @@ internal static class CliTestHelper
 
         return services.BuildServiceProvider();
     }
+
+    /// <summary>
+    /// Wires <see cref="CommandExecutionContext.s_services"/> to <paramref name="services"/> so a
+    /// command invoked afterwards resolves the fakes this provider registers rather than the
+    /// production types, the same way <c>Program.RunAsync</c> wires it to the host's provider.
+    /// </summary>
+    public static void SetCommandExecutionContext(IServiceProvider services)
+        => CommandExecutionContext.s_services.Value = new CommandServices(services);
 }
 
 internal sealed record TestWorkspace(string Path);

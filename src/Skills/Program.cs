@@ -101,6 +101,8 @@ internal static class Program
         {
             await host.StartAsync(cts.Token);
 
+            CommandExecutionContext.s_services.Value = new CommandServices(host.Services);
+
             var rootCommand = host.Services.GetRequiredService<SkillsRootCommand>();
 
             if (args.Length == 0)

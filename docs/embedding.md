@@ -7,6 +7,9 @@ embeddable composition, sample host) implement exactly what is written here.
 Decision 3 (package identity) is PENDING a user ruling and is marked as such
 below. Decisions 1 and 2 are ruled here.
 
+This document lives at docs/embedding.md rather than as a CLAUDE.md section
+because it is a host-facing API contract, not an internal coding convention.
+
 ## Public surface
 
 After the epic, the library exposes exactly two public types. Everything else

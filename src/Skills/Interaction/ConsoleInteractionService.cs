@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using Skills.Utils;
-using Spectre.Console;
 using Spectre.Console.Rendering;
 
 namespace Skills.Interaction;

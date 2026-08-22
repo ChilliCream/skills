@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using Spectre.Console;
 using Spectre.Console.Rendering;
 
 namespace Skills.Interaction;

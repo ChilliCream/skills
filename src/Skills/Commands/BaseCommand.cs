@@ -1,4 +1,3 @@
-using System.CommandLine;
 using System.CommandLine.Help;
 
 namespace Skills.Commands;

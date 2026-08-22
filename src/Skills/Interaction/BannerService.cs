@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text;
 using Skills.Install;
-using Spectre.Console;
 
 namespace Skills.Interaction;
 

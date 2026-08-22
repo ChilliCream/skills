@@ -1,5 +1,3 @@
-using System.CommandLine;
-
 namespace Skills;
 
 internal sealed class CliExecutionContext

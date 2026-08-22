@@ -1,5 +1,3 @@
-using System.CommandLine;
-
 namespace Skills.Commands;
 
 internal sealed class SkillsRootCommand : RootCommand

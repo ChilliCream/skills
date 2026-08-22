@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Skills.Commands;
 using Skills.Git;
@@ -11,7 +10,6 @@ using Skills.Skills;
 using Skills.Sources;
 using Skills.Sources.Providers;
 using Skills.Utils;
-using Spectre.Console;
 
 namespace Skills;
 

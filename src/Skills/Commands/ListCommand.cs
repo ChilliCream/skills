@@ -1,12 +1,10 @@
 using System.Collections.Immutable;
-using System.CommandLine;
 using System.Text.Json;
 using Skills.Install;
 using Skills.Interaction;
 using Skills.Paths;
 using Skills.Skills;
 using Skills.Utils;
-using Spectre.Console;
 
 namespace Skills.Commands;
 

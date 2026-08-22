@@ -1,11 +1,9 @@
 using System.Collections.Immutable;
-using System.CommandLine;
 using Skills.Interaction;
 using Skills.Locking;
 using Skills.Net;
 using Skills.Skills;
 using Skills.Utils;
-using Spectre.Console;
 
 namespace Skills.Commands;
 

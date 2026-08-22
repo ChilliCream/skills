@@ -8,7 +8,6 @@ using Skills.Skills;
 using Skills.Sources;
 using Skills.Sources.Providers;
 using Skills.Utils;
-using Spectre.Console;
 
 namespace Skills.Commands;
 

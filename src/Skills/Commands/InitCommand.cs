@@ -1,10 +1,8 @@
-using System.CommandLine;
 using Skills.Install;
 using Skills.Interaction;
 using Skills.Paths;
 using Skills.Skills;
 using Skills.Utils;
-using Spectre.Console;
 using static Skills.KnownConfigNames;
 
 namespace Skills.Commands;

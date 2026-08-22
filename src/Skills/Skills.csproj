@@ -18,6 +18,12 @@
     <InternalsVisibleTo Include="Skills.Tool" />
   </ItemGroup>
   <ItemGroup>
+    <Using Include="Skills" />
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Spectre.Console" />
+    <Using Include="System.CommandLine" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="System.CommandLine" />
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />

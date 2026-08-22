@@ -1,0 +1,230 @@
+# Embedding contract: skills commands in a host CLI
+
+Status: design contract for the skillz-rn6 epic (task skillz-rn6.1). No production
+code changes in this task. The follow-up tasks (project split, public surface,
+embeddable composition, sample host) implement exactly what is written here.
+
+Decision 3 (package identity) is PENDING a user ruling and is marked as such
+below. Decisions 1 and 2 are ruled here.
+
+## Public surface
+
+After the epic, the library exposes exactly two public types. Everything else
+stays `internal`.
+
+```csharp
+namespace Skills.Commands;
+
+/// The embeddable command group. A host adds it as a subcommand of its own
+/// root and gets `<host> skills add|remove|list|init|update`.
+public sealed class SkillsCommand : Command
+{
+    public SkillsCommand(IServiceProvider serviceProvider);
+}
+```
+
+```csharp
+namespace Skills.Extensions;
+
+public static class ServiceCollectionExtensions
+{
+    /// Registers every service the skills commands resolve at execution time.
+    /// toolCommandName is the full prefix a user types to reach the skills
+    /// verbs: "skills" (or "skillz") standalone, "nitro skills" when embedded.
+    public static IServiceCollection AddSkillsServices(
+        this IServiceCollection services,
+        string toolCommandName);
+}
+```
+
+`AddSkillsServices` already exists with this exact signature (landed in
+skillz-zy4.7); the epic only changes its visibility from `internal` to
+`public`. The `toolCommandName` parameter feeds the `CliExecutionContext`
+singleton, which is what renders example lines in `--help` output and
+command hints; that is why the host must pass the real prefix including its
+own executable name. Note that Nitro's own `AddNitroServices`-style overload
+is parameterless; ours is not, and the host snippet below reflects that.
+
+Registrations use plain `Add*`, not `TryAdd*`. The host shares one container
+with the skills commands; if it needs to override a registration (for
+example console wiring), it registers its replacement after calling
+`AddSkillsServices`.
+
+## Host snippet (what Nitro would write)
+
+```csharp
+using Skills.Commands;
+using Skills.Extensions;
+
+var services = new ServiceCollection();
+// ... host's own registrations ...
+services.AddSkillsServices(toolCommandName: "nitro skills");
+await using var provider = services.BuildServiceProvider();
+
+var rootCommand = new NitroRootCommand();
+rootCommand.Subcommands.Add(new SkillsCommand(provider));
+
+return await rootCommand.Parse(args).InvokeAsync();
+```
+
+Constraint: the provider must exist when `SkillsCommand` is constructed. A
+host that only materializes its container during invocation composes the
+`SkillsCommand` at that point. A lazy `SkillsCommand(Func<IServiceProvider>)`
+overload would be a compatible additive change if a real host needs it; it is
+deliberately not part of v1.
+
+## Decision 1: what a host adds to its root command (RULED)
+
+Ruling: adopt the proposed shape.
+
+- `public sealed class SkillsCommand : Command`, named `"skills"`, composes
+  the five subcommands (`AddCommand`, `RemoveCommand`, `ListCommand`,
+  `InitCommand`, `UpdateCommand`).
+- `internal sealed class SkillsRootCommand : RootCommand` keeps existing for
+  the standalone CLI and composes the same five subcommands directly at the
+  root, so `skills add ...` is unchanged.
+- Both build from one internal composition helper so they never drift:
+
+```csharp
+namespace Skills.Commands;
+
+internal static class SkillsSubcommands
+{
+    public static void AddTo(Command command)
+    {
+        command.Subcommands.Add(new AddCommand());
+        command.Subcommands.Add(new RemoveCommand());
+        command.Subcommands.Add(new ListCommand());
+        command.Subcommands.Add(new InitCommand());
+        command.Subcommands.Add(new UpdateCommand());
+    }
+}
+```
+
+Rationale: a `RootCommand` cannot be added as a subcommand of another
+command, so the reusable unit cannot be `SkillsRootCommand`. The shape
+mirrors the reference (`NitroRootCommand` composes `new ApiCommand()`,
+`new AgentCommand()`, ...). `CommandExamples.Install` takes a `RootCommand`
+(it wraps the root's `HelpOption`) and stays a `SkillsRootCommand`-only
+call; see "Behavior differences when embedded" below.
+
+## Decision 2: how the host supplies services (RULED)
+
+Ruling: option (b), as the single mechanism for both paths. The
+`CommandExecutionContext` `AsyncLocal` is deleted; there is no ambient
+state and no setup call a host can forget.
+
+- `SkillsCommand(IServiceProvider)` and `SkillsRootCommand(IServiceProvider)`
+  each capture the provider, wrapped in the existing `CommandServices`
+  adapter, and expose it through a new internal interface:
+
+```csharp
+namespace Skills;
+
+internal interface ICommandServicesSource
+{
+    ICommandServices CommandServices { get; }
+}
+```
+
+- `CommandExtensions.SetActionWithExceptionHandling` stops reading
+  `CommandExecutionContext.s_services` and instead resolves services by
+  walking from `parseResult.CommandResult.Command` up `Symbol.Parents`
+  (public in System.CommandLine 2.0.5, the pinned version) to the nearest
+  command implementing `ICommandServicesSource`. In both trees that is one
+  hop: leaf to `SkillsCommand` or `SkillsRootCommand`.
+- If no source is found the wrapper throws `InvalidOperationException`
+  naming the contract, for example: "AddCommand must be composed under
+  SkillsCommand or SkillsRootCommand constructed with the IServiceProvider
+  built from AddSkillsServices." In practice this is unreachable from
+  outside the package because the leaf commands are internal, but it is the
+  required failure mode, not a null dereference.
+- `ExamplesHelpAction` resolves `CliExecutionContext.CommandName` through
+  the same parent walk (null-tolerant variant) and keeps its `"skills"`
+  fallback.
+- `RootCommandExtensions.ExecuteAsync` stops setting the `AsyncLocal`;
+  `CommandExecutionContext` and `s_services` are deleted.
+- The standalone entry point (`Program.RunAsync`) already builds the
+  provider before constructing the root command; it changes to
+  `new SkillsRootCommand(provider)`.
+
+Rationale: (a) ambient context requires the host to remember a setup call,
+and the reference host runs its own pipeline with its own execution context
+type in a different assembly, so nothing forces the call to happen. (c) is
+two mechanisms. (b) is host-agnostic, compiler-enforced at the only public
+construction point, AOT-friendly, and removes static mutable state that
+leaks across tests. The parameterless-constructor convention from
+skillz-zy4 continues to apply to the five `{Verb}Command` leaves and their
+static `ExecuteAsync(ICommandServices, ParseResult, CancellationToken)`
+handlers; the two composition roots are the seam where DI enters and are
+the deliberate exception. The CLAUDE.md conventions section must be updated
+with this exception in the task that implements it (skillz-rn6.3), and
+tests that seed the `AsyncLocal` directly move to constructing
+`SkillsRootCommand`/`SkillsCommand` with a provider.
+
+## Behavior differences when embedded
+
+The standalone path (`RootCommandExtensions.ExecuteAsync`) carries curated
+behavior that an embedding host's pipeline will not run. The contract:
+
+- Lost when embedded, by design: the zero-args banner, the curated
+  top-level `--help`, the logo before `add`/`init`, and bare `--` stripping.
+  The host owns its root-level experience; `nitro skills --help` renders
+  System.CommandLine's standard help.
+- Example lines under `--help` are installed by `CommandExamples.Install`
+  on the standalone root's `HelpOption`. A host's `HelpOption` belongs to
+  the host root, so embedded help does not render the example lines. This
+  is accepted; it is a presentation nicety, not part of the contract.
+- Must work identically when embedded: the `--json`/`--format json` switch
+  to machine-readable output. Its central resolution currently lives in
+  `RootCommandExtensions.ExecuteAsync` and would be skipped by a host
+  pipeline. Ruling: move that resolution into the
+  `SetActionWithExceptionHandling` wrapper (which runs on every invocation
+  in both paths and already has the `ParseResult`), and delete it from
+  `ExecuteAsync`. Behavior on the parse-error path is unchanged (neither
+  runs the wrapper today).
+- The exception-to-exit-code ladder and cancellation mapping live in the
+  wrapper and therefore already work identically when embedded.
+
+## Decision 3: package identity (PENDING PASCAL, DO NOT PACK)
+
+The proposed library package id is `ChilliCream.Skills.CommandLine`,
+mirroring `ChilliCream.Nitro.CommandLine`. **This id is a placeholder. It
+has not been ruled by the user. Nothing may be packed or published under it
+until the ruling lands** (binding comment on skillz-rn6.1; skillz-rn6.6 is
+gated on it). The orchestrator carries this in the deferred-decisions
+report.
+
+Facts the ruling can rely on: `Skills.csproj` declares `PackageId=Skills.Cli`
+with `IsPackable=false`, so that id has never been published.
+`src/Skills.Tool` publishes the tool package ids `skills` and `skillz`
+(`ToolCommandName` `skills`); the library id must collide with neither.
+
+Related and equally pending: the root namespace is `Skills` today. Whether
+a ChilliCream-branded package id implies a `ChilliCream.*` namespace is part
+of the same ruling; this contract keeps namespaces `Skills.*` until then.
+
+## Project layout after the split (for skillz-rn6.2)
+
+- `src/Skills` becomes the class library (the future package; `IsPackable`
+  stays `false` until skillz-rn6.6 and the id ruling). It keeps everything
+  it has today except the process entry point: the five commands,
+  `SkillsCommand` (new), `SkillsRootCommand`, `RootCommandExtensions`,
+  `BannerService`, services, options. Public surface as listed above; the
+  standalone-only pieces stay internal.
+- new `src/Skills.Cli` is the slim executable: `Program.Main`/`RunAsync`
+  (including the CancelKeyPress/ProcessExit wiring and the top-level catch
+  ladder) move there. It carries the AOT publish settings that only make
+  sense for an executable.
+- `src/Skills.Tool` keeps shipping the `skills`/`skillz` tool packages and
+  calls `RunAsync` where it now lives, referencing `Skills.Cli`.
+- `InternalsVisibleTo` from the library: `Skills.Tests`, `Skills.Cli`,
+  `Skills.Tool`.
+
+## Non-goals
+
+- No plugin or extensibility model. A host embeds the five commands as they
+  are; it does not add its own skills subcommands.
+- No lazy-provider constructor overload in v1 (see host snippet section).
+- This document changes no production code; the gate baseline (0-warning
+  build, full test suite green) is unchanged by it.

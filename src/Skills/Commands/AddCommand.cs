@@ -1,17 +1,14 @@
 using Skills.Arguments;
 using Skills.Commands.Add.Options;
+using Skills.Extensions;
 using Skills.Interaction;
 using Skills.Options;
 
 namespace Skills.Commands;
 
-internal sealed class AddCommand(
-    IInteractionService interaction,
-    AddCommandExecutor executor,
-    CliExecutionContext executionContext)
-    : BaseCommand("add", "Add a skill from a source")
+internal sealed class AddCommand : Command
 {
-    protected override void Configure()
+    public AddCommand() : base("add", "Add a skill from a source")
     {
         Arguments.Add(Opt<OptionalSourceArgument>.Instance);
         Options.Add(Opt<GlobalOption>.Instance);
@@ -22,25 +19,33 @@ internal sealed class AddCommand(
         Options.Add(Opt<CopyOption>.Instance);
         Options.Add(Opt<FullDepthOption>.Instance);
         Options.Add(Opt<ListOption>.Instance);
+
+        this.SetActionWithExceptionHandling(ExecuteAsync);
     }
 
-    protected override async Task<CommandResult> ExecuteAsync(
+    private static async Task<int> ExecuteAsync(
+        ICommandServices services,
         ParseResult parseResult,
         CancellationToken cancellationToken)
     {
+        var interaction = services.GetRequiredService<IInteractionService>();
+        var executor = services.GetRequiredService<AddCommandExecutor>();
+        var executionContext = services.GetRequiredService<CliExecutionContext>();
+
         var options = ParseOptions(parseResult);
 
         if (string.IsNullOrWhiteSpace(options.Source))
         {
             interaction.WriteError("Missing required argument: source");
             interaction.WriteLine($"Usage: {executionContext.CommandName} add <source> [options]");
-            return new CommandResult.Failure(ExitCodeConstants.Failure);
+            return ExitCodeConstants.Failure;
         }
 
-        return await executor.RunAsync(options, cancellationToken);
+        var result = await executor.RunAsync(options, cancellationToken);
+        return result.ExitCode;
     }
 
-    private AddCommandOptions ParseOptions(ParseResult parseResult)
+    private static AddCommandOptions ParseOptions(ParseResult parseResult)
     {
         var source = parseResult.GetValue(Opt<OptionalSourceArgument>.Instance);
         var global = parseResult.GetValue(Opt<GlobalOption>.Instance);

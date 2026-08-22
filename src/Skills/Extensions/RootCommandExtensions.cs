@@ -1,4 +1,5 @@
 using Skills.Interaction;
+using Skills.Options;
 
 namespace Skills.Extensions;
 
@@ -42,6 +43,16 @@ internal static class RootCommandExtensions
         if (parseResult.Errors.Count > 0)
         {
             return await parseResult.InvokeAsync(invocationConfiguration, cancellationToken);
+        }
+
+        // Resolved once here, from whichever command declared the option, rather than each command
+        // pushing its own flag onto a shared context: commands that never emit JSON never need to
+        // know this option exists.
+        var format = parseResult.GetValue(Opt<OptionalOutputFormatOption>.Instance);
+        var jsonFlag = parseResult.GetValue(Opt<JsonOption>.Instance);
+        if (jsonFlag || format.EqualsOrdinalIgnoreCase("json"))
+        {
+            services.GetRequiredService<IInteractionService>().SetOutputFormat(OutputFormat.Json);
         }
 
         var commandName = parseResult.CommandResult.Command.Name;

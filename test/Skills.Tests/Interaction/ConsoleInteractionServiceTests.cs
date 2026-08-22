@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
+using Skills;
 using Skills.Interaction;
+using Spectre.Console;
 using Spectre.Console.Testing;
 using Xunit;
 
@@ -13,6 +15,95 @@ public class ConsoleInteractionServiceTests
         console.Profile.Capabilities.Interactive = true;
         console.Profile.Capabilities.Ansi = true;
         return console;
+    }
+
+    [Fact]
+    public void IsHumanReadable_Should_Be_True_Before_SetOutputFormat_Is_Called()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+
+        Assert.True(service.IsHumanReadable);
+    }
+
+    [Fact]
+    public void IsHumanReadable_Should_Be_False_After_SetOutputFormat_Is_Called()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+
+        service.SetOutputFormat(OutputFormat.Json);
+
+        Assert.False(service.IsHumanReadable);
+    }
+
+    [Fact]
+    public void WriteMarkupLine_Should_Write_Nothing_When_Output_Format_Is_Json()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+        service.SetOutputFormat(OutputFormat.Json);
+
+        service.WriteMarkupLine("[red]should not appear[/]");
+
+        Assert.Equal("", console.Output);
+    }
+
+    [Fact]
+    public void WriteLine_Should_Write_Nothing_When_Output_Format_Is_Json()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+        service.SetOutputFormat(OutputFormat.Json);
+
+        service.WriteLine("should not appear");
+
+        Assert.Equal("", console.Output);
+    }
+
+    [Fact]
+    public void WriteError_Should_Write_Nothing_When_Output_Format_Is_Json()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+        service.SetOutputFormat(OutputFormat.Json);
+
+        service.WriteError("should not appear");
+
+        Assert.Equal("", console.Output);
+    }
+
+    [Fact]
+    public void WriteRenderable_Should_Write_Nothing_When_Output_Format_Is_Json_And_Renderable_Is_Markup()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+        service.SetOutputFormat(OutputFormat.Json);
+
+        service.WriteRenderable(new Markup("should not appear"));
+
+        Assert.Equal("", console.Output);
+    }
+
+    [Fact]
+    public void WriteRenderable_Should_Throw_When_Output_Format_Is_Json_And_Renderable_Is_Not_Text()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+        service.SetOutputFormat(OutputFormat.Json);
+
+        Assert.Throws<ExitException>(() => service.WriteRenderable(new Grid()));
+    }
+
+    [Fact]
+    public void WriteMarkupLine_Should_Write_When_Output_Format_Is_Unset()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+
+        service.WriteMarkupLine("[red]hello[/]");
+
+        Assert.Contains("hello", console.Output, StringComparison.Ordinal);
     }
 
     [Fact]

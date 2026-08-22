@@ -19,28 +19,71 @@ internal sealed class ConsoleInteractionService(IAnsiConsole? console = null) : 
     private const string MultiSelectInstructions =
         "[grey](Press [blue]<space>[/] to select, then [green]<enter>[/] to confirm - use [blue]j/k[/] or arrows to move)[/]";
 
+    private OutputFormat? _outputFormat;
+
+    public bool IsHumanReadable => _outputFormat is null;
+
+    public void SetOutputFormat(OutputFormat format)
+    {
+        _outputFormat = format;
+    }
+
     public void WriteLine(string text = "")
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _console.WriteLine(text);
     }
 
     public void WriteMarkupLine(string markup)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _console.MarkupLine(markup);
     }
 
     public void WriteRenderable(IRenderable renderable)
     {
-        _console.Write(renderable);
+        if (IsHumanReadable)
+        {
+            _console.Write(renderable);
+            return;
+        }
+
+        // Plain text has no layout to corrupt a machine-readable format, so it is dropped quietly.
+        // Anything else (a grid, a panel, ...) is a UI element that has no business rendering
+        // outside human-readable mode, so surface the mistake instead of writing it anyway.
+        if (renderable is Text or Paragraph or Markup)
+        {
+            return;
+        }
+
+        throw new ExitException("Cannot render this output while the run is in machine-readable mode.");
     }
 
     public void WriteError(string message)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _console.MarkupLineInterpolated($"[red]{message}[/]");
     }
 
     public void WriteErrorPanel(string title, string message, string? tip = null)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         var content = new StringBuilder();
         content.Append($"[red]{Markup.Escape(message)}[/]");
         if (tip is not null)
@@ -60,16 +103,31 @@ internal sealed class ConsoleInteractionService(IAnsiConsole? console = null) : 
 
     public void WriteWarning(string message)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _console.MarkupLineInterpolated($"[yellow]{message}[/]");
     }
 
     public void WriteSuccess(string message)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _console.MarkupLineInterpolated($"[green]{message}[/]");
     }
 
     public void WriteDim(string text)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _console.MarkupLineInterpolated($"[dim]{text}[/]");
     }
 

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Text;
+using Skills;
 using Skills.Interaction;
 using Spectre.Console;
 using Spectre.Console.Rendering;
@@ -35,9 +36,18 @@ internal sealed class TestInteractionService : IInteractionService
         _console.Profile.Width = 80;
     }
 
+    private OutputFormat? _outputFormat;
+
     public IReadOnlyList<string> Output => _output;
 
     public string OutputText => _writer.ToString();
+
+    public bool IsHumanReadable => _outputFormat is null;
+
+    public void SetOutputFormat(OutputFormat format)
+    {
+        _outputFormat = format;
+    }
 
     public Func<string, bool, bool>? OnConfirm { get; set; }
 
@@ -98,29 +108,60 @@ internal sealed class TestInteractionService : IInteractionService
 
     public void WriteLine(string text = "")
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _output.Add(text);
         _console.WriteLine(text);
     }
 
     public void WriteMarkupLine(string markup)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _output.Add(markup);
         _console.MarkupLine(markup);
     }
 
     public void WriteRenderable(IRenderable renderable)
     {
-        _console.Write(renderable);
+        if (IsHumanReadable)
+        {
+            _console.Write(renderable);
+            return;
+        }
+
+        if (renderable is Text or Paragraph or Markup)
+        {
+            return;
+        }
+
+        throw new ExitException("Cannot render this output while the run is in machine-readable mode.");
     }
 
     public void WriteError(string message)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _output.Add($"ERROR: {message}");
         _console.MarkupLineInterpolated($"[red]{message}[/]");
     }
 
     public void WriteErrorPanel(string title, string message, string? tip = null)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _output.Add($"ERROR: {title}: {message}");
         if (tip is not null)
         {
@@ -146,18 +187,33 @@ internal sealed class TestInteractionService : IInteractionService
 
     public void WriteWarning(string message)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _output.Add($"WARN: {message}");
         _console.MarkupLineInterpolated($"[yellow]{message}[/]");
     }
 
     public void WriteSuccess(string message)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _output.Add($"SUCCESS: {message}");
         _console.MarkupLineInterpolated($"[green]{message}[/]");
     }
 
     public void WriteDim(string text)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _output.Add(text);
         _console.MarkupLineInterpolated($"[dim]{text}[/]");
     }

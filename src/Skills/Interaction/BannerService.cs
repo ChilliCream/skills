@@ -153,7 +153,7 @@ internal sealed class BannerService(
 
     private bool ShouldSkip()
     {
-        if (context.IsJsonOutput)
+        if (!interaction.IsHumanReadable)
         {
             return true;
         }

@@ -33,15 +33,16 @@ internal sealed class ListCommand : Command
         var interaction = services.GetRequiredService<IInteractionService>();
         var fileStore = services.GetRequiredService<IFileStore>();
         var systemEnvironment = services.GetRequiredService<ISystemEnvironment>();
-        var executionContext = services.GetRequiredService<CliExecutionContext>();
 
         var global = parseResult.GetValue(Opt<GlobalOption>.Instance);
         var agents = parseResult.GetValue(Opt<AgentOption>.Instance) ?? [];
         var format = parseResult.GetValue(Opt<OptionalOutputFormatOption>.Instance);
         var jsonFlag = parseResult.GetValue(Opt<JsonOption>.Instance);
-        var jsonOutput = jsonFlag || format.EqualsOrdinalIgnoreCase("json");
 
-        executionContext.IsJsonOutput = jsonOutput;
+        if (jsonFlag || format.EqualsOrdinalIgnoreCase("json"))
+        {
+            interaction.SetOutputFormat(OutputFormat.Json);
+        }
 
         if (agents.Length > 0)
         {
@@ -63,7 +64,7 @@ internal sealed class ListCommand : Command
             global,
             cancellationToken);
 
-        if (jsonOutput)
+        if (!interaction.IsHumanReadable)
         {
             var payload = skills.Select(s => s.ToJsonType(global, registry)).ToArray();
 

@@ -1,9 +1,9 @@
-using Skills;
+using Skills.Extensions;
 using Xunit;
 
 namespace Skills.Tests;
 
-public class ProgramTests
+public class RootCommandExtensionsTests
 {
     [Fact]
     public void StripBareTerminators_Removes_Terminator_Between_Options_And_Positionals()
@@ -11,7 +11,7 @@ public class ProgramTests
         // Act & Assert
         Assert.Equal(
             ["add", "--agent", "codex", "owner/repo"],
-            Program.StripBareTerminators(["add", "--agent", "codex", "--", "owner/repo"]));
+            RootCommandExtensions.StripBareTerminators(["add", "--agent", "codex", "--", "owner/repo"]));
     }
 
     [Fact]
@@ -20,7 +20,7 @@ public class ProgramTests
         // Act & Assert
         Assert.Equal(
             ["add", "--upload-pack=sh"],
-            Program.StripBareTerminators(["add", "--", "--upload-pack=sh"]));
+            RootCommandExtensions.StripBareTerminators(["add", "--", "--upload-pack=sh"]));
     }
 
     [Fact]
@@ -29,6 +29,6 @@ public class ProgramTests
         // Act & Assert
         Assert.Equal(
             ["add", "owner/repo"],
-            Program.StripBareTerminators(["--", "add", "--", "owner/repo", "--"]));
+            RootCommandExtensions.StripBareTerminators(["--", "add", "--", "owner/repo", "--"]));
     }
 }

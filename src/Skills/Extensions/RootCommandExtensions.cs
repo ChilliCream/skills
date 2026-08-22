@@ -20,7 +20,7 @@ internal static class RootCommandExtensions
     {
         CommandExecutionContext.s_services.Value = new CommandServices(services);
 
-        var strippedArgs = Program.StripBareTerminators(args);
+        var strippedArgs = StripBareTerminators(args);
 
         if (strippedArgs.Length == 0)
         {
@@ -64,4 +64,8 @@ internal static class RootCommandExtensions
 
         return await parseResult.InvokeAsync(invocationConfiguration, cancellationToken);
     }
+
+    // Strips bare `--` tokens. The CLI has no pass-through commands, so the argument terminator
+    // is meaningless here and would only confuse System.CommandLine's parsing.
+    internal static string[] StripBareTerminators(IReadOnlyList<string> args) => args.Where(a => a != "--").ToArray();
 }

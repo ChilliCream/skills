@@ -3,11 +3,23 @@ using Skills.Extensions;
 
 namespace Skills;
 
-internal static class Program
+/// <summary>
+/// Runs the skills CLI end to end. <see cref="RunAsync"/> is the entry point the standalone
+/// <c>skills</c> executable (src/Skills.Cli) and the <c>dotnet tool</c> wrapper (src/Skills.Tool)
+/// both call; it builds the service container, parses the arguments against
+/// <see cref="SkillsRootCommand"/>, and maps the outcome to a process exit code.
+/// </summary>
+public static class Program
 {
-    public static Task<int> Main(string[] args) => RunAsync(args, toolCommandName: null);
-
-    internal static async Task<int> RunAsync(string[] args, string? toolCommandName)
+    /// <summary>
+    /// Runs the skills CLI.
+    /// </summary>
+    /// <param name="args">The raw command-line arguments.</param>
+    /// <param name="toolCommandName">
+    /// The prefix under which the CLI is invoked (for example <c>skills</c> or <c>skillz</c>);
+    /// <see langword="null"/> or blank falls back to <c>"skills"</c>.
+    /// </param>
+    public static async Task<int> RunAsync(string[] args, string? toolCommandName)
     {
         toolCommandName = string.IsNullOrWhiteSpace(toolCommandName) ? "skills" : toolCommandName.Trim();
 
@@ -57,8 +69,4 @@ internal static class Program
             AppDomain.CurrentDomain.ProcessExit -= unloadHandler;
         }
     }
-
-    // Strips bare `--` tokens. The CLI has no pass-through commands, so the argument terminator
-    // is meaningless here and would only confuse System.CommandLine's parsing.
-    internal static string[] StripBareTerminators(IReadOnlyList<string> args) => args.Where(a => a != "--").ToArray();
 }

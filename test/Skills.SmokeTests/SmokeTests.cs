@@ -171,6 +171,6 @@ public class SmokeTests
         var dir =
             Path.GetDirectoryName(sourceFilePath)
             ?? throw new InvalidOperationException("Unable to resolve smoke test source directory.");
-        return Path.GetFullPath(Path.Combine(dir, "..", "..", "src", "Skills", "Skills.csproj"));
+        return Path.GetFullPath(Path.Combine(dir, "..", "..", "src", "Skills.Cli", "Skills.Cli.csproj"));
     }
 }

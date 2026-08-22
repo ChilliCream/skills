@@ -1,21 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
-    <AssemblyName>skills</AssemblyName>
     <RootNamespace>Skills</RootNamespace>
-    <RollForward>Major</RollForward>
-    <PublishAot>true</PublishAot>
-    <OptimizationPreference>Size</OptimizationPreference>
-    <RuntimeIdentifiers>linux-x64;linux-arm64;linux-musl-x64;osx-x64;osx-arm64;win-x64;win-arm64</RuntimeIdentifiers>
+    <!-- The CLR resolves weak-named assembly references case-insensitively, and the standalone
+         executable's own assembly name is "skills" (src/Skills.Cli, fixed by the release asset
+         names). Left at the default ("Skills", from the project file name), that self-loaded
+         entry assembly would shadow this library at runtime for every "Skills" reference. An
+         explicit, non-colliding name sidesteps it; the namespace and public surface are
+         unaffected. Not published while IsPackable is false; the real package id is a separate,
+         pending decision (docs/embedding.md, Decision 3). -->
+    <AssemblyName>Skills.Library</AssemblyName>
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
     <IsPackable>false</IsPackable>
-    <PackageId>Skills.Cli</PackageId>
+    <PackageId>Skills.Library</PackageId>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Skills.Tests" />
-    <InternalsVisibleTo Include="Skills.Tool" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Skills" />

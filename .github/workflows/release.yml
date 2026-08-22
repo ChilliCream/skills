@@ -63,7 +63,7 @@ jobs:
         shell: bash
         env:
           VERSION: ${{ needs.version.outputs.version }}
-        run: dotnet publish src/Skills/Skills.csproj -c Release -f net10.0 -r ${{ matrix.rid }} --self-contained -o ./publish/${{ matrix.rid }} -p:Version="$VERSION"
+        run: dotnet publish src/Skills.Cli/Skills.Cli.csproj -c Release -f net10.0 -r ${{ matrix.rid }} --self-contained -o ./publish/${{ matrix.rid }} -p:Version="$VERSION"
 
       - name: 📦 Package (Unix)
         if: runner.os != 'Windows'

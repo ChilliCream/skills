@@ -13,10 +13,21 @@ using Skills.Utils;
 namespace Skills.Extensions;
 
 /// <summary>
-/// Registers every service the Skills CLI needs to resolve commands and their dependencies.
+/// Registers the services the skills commands need with a host's dependency injection container.
 /// </summary>
-internal static class ServiceCollectionExtensions
+public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Registers every service the skills commands resolve at execution time.
+    /// </summary>
+    /// <param name="services">The service collection to register into.</param>
+    /// <param name="toolCommandName">
+    /// The full prefix a user types to reach the skills verbs: <c>"skills"</c> (or <c>"skillz"</c>)
+    /// standalone, <c>"nitro skills"</c> when embedded. This feeds the execution context that
+    /// renders example lines in <c>--help</c> output and command hints, so callers must pass the
+    /// real prefix including their own executable name.
+    /// </param>
+    /// <returns>The same <paramref name="services"/> instance, so calls can be chained.</returns>
     public static IServiceCollection AddSkillsServices(this IServiceCollection services, string toolCommandName)
     {
         services.AddSingleton(AnsiConsole.Console);

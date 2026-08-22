@@ -12,7 +12,7 @@ namespace Skills.Git;
 /// credential redaction in <see cref="GitUrl"/>; this type owns only process
 /// execution, timeouts, cleanup, and error mapping.
 /// </summary>
-public sealed class GitClient : IGitClient
+internal sealed class GitClient : IGitClient
 {
     private const int DefaultCloneTimeoutMs = 300_000;
     private const string CloneTimeoutEnvVar = "SKILLS_CLONE_TIMEOUT_MS";

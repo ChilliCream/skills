@@ -42,6 +42,7 @@ public class UpdateCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider();
+        CliTestHelper.SetCommandExecutionContext(services);
         var globalLock = services.GetRequiredService<TestGlobalLockFile>();
         globalLock.OnRead = () =>
             new SkillLockFile { Version = 3, Skills = new Dictionary<string, SkillLockEntry>(StringComparer.Ordinal) };
@@ -64,6 +65,7 @@ public class UpdateCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider();
+        CliTestHelper.SetCommandExecutionContext(services);
         var globalLock = services.GetRequiredService<TestGlobalLockFile>();
         globalLock.OnRead = () =>
             new SkillLockFile
@@ -112,6 +114,7 @@ public class UpdateCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider();
+        CliTestHelper.SetCommandExecutionContext(services);
         var globalLock = services.GetRequiredService<TestGlobalLockFile>();
         globalLock.OnRead = () =>
             new SkillLockFile
@@ -168,6 +171,7 @@ public class UpdateCommandTests : IDisposable
         // printed "Run: skills add ..." suggestion must be escape-free.
         const string escapedFolder = "tools/inner\x1b]0;title\x07";
         var services = CliTestHelper.CreateServiceProvider();
+        CliTestHelper.SetCommandExecutionContext(services);
         var globalLock = services.GetRequiredService<TestGlobalLockFile>();
         globalLock.OnRead = () =>
             new SkillLockFile
@@ -226,6 +230,7 @@ public class UpdateCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider();
+        CliTestHelper.SetCommandExecutionContext(services);
         var globalLock = services.GetRequiredService<TestGlobalLockFile>();
         globalLock.OnRead = () =>
             new SkillLockFile
@@ -267,6 +272,7 @@ public class UpdateCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider();
+        CliTestHelper.SetCommandExecutionContext(services);
         var globalLock = services.GetRequiredService<TestGlobalLockFile>();
         globalLock.OnRead = () =>
             new SkillLockFile
@@ -305,6 +311,7 @@ public class UpdateCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider();
+        CliTestHelper.SetCommandExecutionContext(services);
         var globalLock = services.GetRequiredService<TestGlobalLockFile>();
         globalLock.OnRead = () =>
             new SkillLockFile
@@ -341,6 +348,7 @@ public class UpdateCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider();
+        CliTestHelper.SetCommandExecutionContext(services);
         var projectLock = services.GetRequiredService<TestProjectLockFile>();
         projectLock.OnRead = _ => new LocalSkillLockFile
         {
@@ -364,6 +372,7 @@ public class UpdateCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider();
+        CliTestHelper.SetCommandExecutionContext(services);
         var projectLock = services.GetRequiredService<TestProjectLockFile>();
         projectLock.OnRead = _ => new LocalSkillLockFile
         {
@@ -401,6 +410,7 @@ public class UpdateCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider();
+        CliTestHelper.SetCommandExecutionContext(services);
         var projectLock = services.GetRequiredService<TestProjectLockFile>();
         projectLock.OnRead = _ => new LocalSkillLockFile
         {
@@ -439,6 +449,7 @@ public class UpdateCommandTests : IDisposable
         // Arrange: -y without -g/-p is non-interactive and ambiguous. The command must not silently
         // pick one scope (and risk checking the wrong one); it checks BOTH global and project.
         var services = CliTestHelper.CreateServiceProvider();
+        CliTestHelper.SetCommandExecutionContext(services);
         var globalLock = services.GetRequiredService<TestGlobalLockFile>();
         globalLock.OnRead = () =>
             new SkillLockFile { Version = 3, Skills = new Dictionary<string, SkillLockEntry>(StringComparer.Ordinal) };
@@ -466,6 +477,7 @@ public class UpdateCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider();
+        CliTestHelper.SetCommandExecutionContext(services);
         var globalLock = services.GetRequiredService<TestGlobalLockFile>();
         globalLock.OnRead = () =>
             new SkillLockFile { Version = 3, Skills = new Dictionary<string, SkillLockEntry>(StringComparer.Ordinal) };
@@ -497,6 +509,7 @@ public class UpdateCommandTests : IDisposable
         // than silently resolving to Global only and missing them. Global has a real update so we
         // can prove BOTH scopes ran in the same invocation.
         var services = CliTestHelper.CreateServiceProvider();
+        CliTestHelper.SetCommandExecutionContext(services);
         var globalLock = services.GetRequiredService<TestGlobalLockFile>();
         globalLock.OnRead = () =>
             new SkillLockFile
@@ -570,6 +583,7 @@ public class UpdateCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider();
+        CliTestHelper.SetCommandExecutionContext(services);
         var cmd = services.GetRequiredService<UpdateCommand>();
 
         // Assert

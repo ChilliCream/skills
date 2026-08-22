@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Skills.Commands.Update.Arguments;
 using Skills.Commands.Update.Options;
+using Skills.Extensions;
 using Skills.Interaction;
 using Skills.Locking;
 using Skills.Net;
@@ -10,28 +11,33 @@ using Skills.Utils;
 
 namespace Skills.Commands;
 
-internal sealed class UpdateCommand(
-    IInteractionService interaction,
-    IGlobalLockFile globalLockFile,
-    IProjectLockFile projectLockFile,
-    IBlobClient blobClient,
-    ConsoleEnvironment consoleEnvironment,
-    CliExecutionContext executionContext) : BaseCommand("update", "Check for skill updates.")
+internal sealed class UpdateCommand : Command
 {
-    protected override void Configure()
+    public UpdateCommand() : base("update", "Check for skill updates.")
     {
         Aliases.Add("upgrade");
         Aliases.Add("check");
+
         Arguments.Add(Opt<SkillsArgument>.Instance);
         Options.Add(Opt<GlobalOption>.Instance);
         Options.Add(Opt<ProjectOption>.Instance);
         Options.Add(Opt<YesOption>.Instance);
+
+        this.SetActionWithExceptionHandling(ExecuteAsync);
     }
 
-    protected override async Task<CommandResult> ExecuteAsync(
+    private static async Task<int> ExecuteAsync(
+        ICommandServices services,
         ParseResult parseResult,
         CancellationToken cancellationToken)
     {
+        var interaction = services.GetRequiredService<IInteractionService>();
+        var globalLockFile = services.GetRequiredService<IGlobalLockFile>();
+        var projectLockFile = services.GetRequiredService<IProjectLockFile>();
+        var blobClient = services.GetRequiredService<IBlobClient>();
+        var consoleEnvironment = services.GetRequiredService<ConsoleEnvironment>();
+        var executionContext = services.GetRequiredService<CliExecutionContext>();
+
         var skills = parseResult.GetValue(Opt<SkillsArgument>.Instance);
         var skillFilter = skills is { Length: > 0 } ? skills : null;
 
@@ -41,7 +47,7 @@ internal sealed class UpdateCommand(
             parseResult.GetValue(Opt<YesOption>.Instance),
             skillFilter);
 
-        var scope = await ResolveScopeAsync(options, cancellationToken);
+        var scope = await ResolveScopeAsync(interaction, consoleEnvironment, options, cancellationToken);
 
         if (skillFilter is not null)
         {
@@ -65,7 +71,14 @@ internal sealed class UpdateCommand(
                 interaction.WriteMarkupLine("[bold]Global Skills[/]");
             }
 
-            var globalResult = await CheckGlobalSkillsAsync(skillFilter, cancellationToken);
+            var globalResult = await CheckGlobalSkillsAsync(
+                interaction,
+                globalLockFile,
+                blobClient,
+                consoleEnvironment,
+                executionContext,
+                skillFilter,
+                cancellationToken);
             totalUpdatesAvailable += globalResult.UpdatesAvailableCount;
             totalFail += globalResult.FailCount;
             totalFound += globalResult.CheckedCount;
@@ -83,7 +96,12 @@ internal sealed class UpdateCommand(
                 interaction.WriteMarkupLine("[bold]Project Skills[/]");
             }
 
-            var projectResult = await CheckProjectSkillsAsync(skillFilter, cancellationToken);
+            var projectResult = await CheckProjectSkillsAsync(
+                interaction,
+                projectLockFile,
+                executionContext,
+                skillFilter,
+                cancellationToken);
             totalFail += projectResult.FailCount;
             totalFound += projectResult.CheckedCount;
         }
@@ -107,10 +125,14 @@ internal sealed class UpdateCommand(
         }
 
         interaction.WriteLine();
-        return new CommandResult.Success();
+        return ExitCodeConstants.Success;
     }
 
-    private async Task<UpdateScope> ResolveScopeAsync(UpdateCheckOptions options, CancellationToken cancellationToken)
+    private static async Task<UpdateScope> ResolveScopeAsync(
+        IInteractionService interaction,
+        ConsoleEnvironment consoleEnvironment,
+        UpdateCheckOptions options,
+        CancellationToken cancellationToken)
     {
         if (options.Global && options.Project)
         {
@@ -157,7 +179,12 @@ internal sealed class UpdateCommand(
             cancellationToken);
     }
 
-    private async Task<(int UpdatesAvailableCount, int FailCount, int CheckedCount)> CheckGlobalSkillsAsync(
+    private static async Task<(int UpdatesAvailableCount, int FailCount, int CheckedCount)> CheckGlobalSkillsAsync(
+        IInteractionService interaction,
+        IGlobalLockFile globalLockFile,
+        IBlobClient blobClient,
+        ConsoleEnvironment consoleEnvironment,
+        CliExecutionContext executionContext,
         string[]? skillFilter,
         CancellationToken cancellationToken)
     {
@@ -219,6 +246,7 @@ internal sealed class UpdateCommand(
                 }
 
                 var check = await TryFetchSkillFolderHashAsync(
+                    blobClient,
                     entry.Source,
                     entry.SkillPath!,
                     entry.Ref,
@@ -259,14 +287,14 @@ internal sealed class UpdateCommand(
 
         if (checkable.Count == 0 && skipped.Count > 0)
         {
-            PrintSkippedSkills(skipped);
+            PrintSkippedSkills(interaction, executionContext, skipped);
             return (0, 0, checkedCount);
         }
 
         if (updates.Count == 0 && failed.Count == 0 && timedOut.Count == 0)
         {
             interaction.WriteSuccess("All global skills are up to date");
-            PrintSkippedSkills(skipped);
+            PrintSkippedSkills(interaction, executionContext, skipped);
             return (0, 0, checkedCount);
         }
 
@@ -283,14 +311,17 @@ internal sealed class UpdateCommand(
             }
         }
 
-        PrintSkippedSkills(skipped);
-        PrintFailedSkills(failed);
-        PrintTimedOutSkills(timedOut);
+        PrintSkippedSkills(interaction, executionContext, skipped);
+        PrintFailedSkills(interaction, failed);
+        PrintTimedOutSkills(interaction, timedOut);
 
         return (updates.Count, failed.Count + timedOut.Count, checkedCount);
     }
 
-    private async Task<(int FailCount, int CheckedCount)> CheckProjectSkillsAsync(
+    private static async Task<(int FailCount, int CheckedCount)> CheckProjectSkillsAsync(
+        IInteractionService interaction,
+        IProjectLockFile projectLockFile,
+        CliExecutionContext executionContext,
         string[]? skillFilter,
         CancellationToken cancellationToken)
     {
@@ -327,7 +358,7 @@ internal sealed class UpdateCommand(
         if (updatable.Count == 0)
         {
             interaction.WriteDim("No project skills can be updated in place.");
-            PrintLegacyProjectSkills(legacy);
+            PrintLegacyProjectSkills(interaction, executionContext, legacy);
             return (0, projectSkills.Count);
         }
 
@@ -341,12 +372,13 @@ internal sealed class UpdateCommand(
             interaction.WriteDim($"  Run: {executionContext.CommandName} add {installUrl} --skill {name} -y");
         }
 
-        PrintLegacyProjectSkills(legacy);
+        PrintLegacyProjectSkills(interaction, executionContext, legacy);
 
         return (0, projectSkills.Count);
     }
 
-    private async Task<HashCheck> TryFetchSkillFolderHashAsync(
+    private static async Task<HashCheck> TryFetchSkillFolderHashAsync(
+        IBlobClient blobClient,
         string ownerRepo,
         string skillPath,
         string? @ref,
@@ -469,7 +501,10 @@ internal sealed class UpdateCommand(
         return "No version tracking";
     }
 
-    private void PrintSkippedSkills(IReadOnlyList<SkippedSkill> skipped)
+    private static void PrintSkippedSkills(
+        IInteractionService interaction,
+        CliExecutionContext executionContext,
+        IReadOnlyList<SkippedSkill> skipped)
     {
         if (skipped.Count == 0)
         {
@@ -487,7 +522,7 @@ internal sealed class UpdateCommand(
         }
     }
 
-    private void PrintFailedSkills(IReadOnlyList<string> failed)
+    private static void PrintFailedSkills(IInteractionService interaction, IReadOnlyList<string> failed)
     {
         if (failed.Count == 0)
         {
@@ -502,7 +537,7 @@ internal sealed class UpdateCommand(
         }
     }
 
-    private void PrintTimedOutSkills(List<string> timedOut)
+    private static void PrintTimedOutSkills(IInteractionService interaction, List<string> timedOut)
     {
         if (timedOut.Count == 0)
         {
@@ -517,7 +552,10 @@ internal sealed class UpdateCommand(
         }
     }
 
-    private void PrintLegacyProjectSkills(IReadOnlyList<(string Name, LocalSkillLockEntry Entry)> legacy)
+    private static void PrintLegacyProjectSkills(
+        IInteractionService interaction,
+        CliExecutionContext executionContext,
+        IReadOnlyList<(string Name, LocalSkillLockEntry Entry)> legacy)
     {
         if (legacy.Count == 0)
         {
@@ -553,8 +591,8 @@ internal sealed class UpdateCommand(
     private static string FormatSourceInput(string sourceUrl, string? @ref)
     {
         var input = string.IsNullOrEmpty(@ref) ? sourceUrl : $"{sourceUrl}#{@ref}";
-        // Display-only: the result is only ever printed via WriteDim, so strip any terminal
-        // escapes (the source can embed an untrusted, caller-derived skill path).
+        // Display-only: the result is only ever printed via WriteDim (the source can embed an
+        // untrusted, caller-derived skill path), so strip any terminal escapes.
         return TerminalSanitizer.SanitizeMetadata(input);
     }
 

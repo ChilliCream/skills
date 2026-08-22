@@ -18,6 +18,8 @@ internal sealed class InitCommand : Command
 
         Arguments.Add(Opt<OptionalSkillNameArgument>.Instance);
 
+        this.AddExamples("init", "init my-skill");
+
         this.SetActionWithExceptionHandling(ExecuteAsync);
     }
 

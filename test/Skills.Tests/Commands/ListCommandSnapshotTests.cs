@@ -127,6 +127,39 @@ public class ListCommandSnapshotTests : IDisposable
     }
 
     [Fact]
+    public async Task List_Help_Shows_Examples()
+    {
+        // Arrange
+        var services = BuildServices();
+
+        // Act
+        var output = await CommandSnapshot.RunAsync(services, "list", "--help");
+
+        // Assert
+        output.MatchInlineSnapshot(
+            """
+            $ skills list --help
+
+            Description:
+              List installed skills
+
+            Usage:
+              Skills.Tests list [options]
+
+            Options:
+              -g, --global         List global skills
+              -a, --agent <agent>  Target agent(s)
+              --format <format>    Output format (text|json)
+              --json               Output as JSON (alias for --format json)
+              -?, -h, --help       Show help and usage information
+
+            Example:
+              skills list
+              skills list -g --json
+            """);
+    }
+
+    [Fact]
     public async Task List_With_Invalid_Agent_Fails()
     {
         // Arrange

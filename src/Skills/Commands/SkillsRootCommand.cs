@@ -9,5 +9,7 @@ internal sealed class SkillsRootCommand : RootCommand
         Subcommands.Add(new ListCommand());
         Subcommands.Add(new InitCommand());
         Subcommands.Add(new UpdateCommand());
+
+        CommandExamples.Install(this);
     }
 }

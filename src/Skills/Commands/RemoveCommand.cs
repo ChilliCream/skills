@@ -22,6 +22,8 @@ internal sealed class RemoveCommand : Command
         Options.Add(Opt<YesOption>.Instance);
         Options.Add(Opt<AllOption>.Instance);
 
+        this.AddExamples("remove my-skill --yes", "remove --all --yes");
+
         this.SetActionWithExceptionHandling(ExecuteAsync);
     }
 

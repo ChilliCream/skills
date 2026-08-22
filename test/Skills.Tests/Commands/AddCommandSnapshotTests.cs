@@ -261,6 +261,47 @@ public class AddCommandSnapshotTests : IDisposable
     }
 
     [Fact]
+    public async Task Add_Help_Shows_Examples()
+    {
+        // Arrange
+        var services = BuildServices();
+
+        // Act
+        var output = await CommandSnapshot.RunAsync(services, "add", "--help");
+
+        // Assert
+        output.MatchInlineSnapshot(
+            """
+            $ skills add --help
+
+            Description:
+              Add a skill from a source
+
+            Usage:
+              Skills.Tests add [<source>] [options]
+
+            Arguments:
+              <source>  Source to fetch skills from (e.g., owner/repo, URL, local path)
+
+            Options:
+              -g, --global         Install globally
+              -a, --agent <agent>  Target agent(s)
+              -s, --skill <skill>  Skill name filter(s)
+              -y, --yes            Skip prompts (non-interactive)
+              --all                Install all skills to all agents
+              --copy               Copy instead of symlinking
+              --full-depth         Full-depth clone
+              -l, --list           List available skills without installing
+              -?, -h, --help       Show help and usage information
+
+            Example:
+              skills add owner/repo
+              skills add owner/repo --skill foo -a claude-code
+              skills add ./local-path --copy
+            """);
+    }
+
+    [Fact]
     public async Task Add_Install_Failure_Shows_Failure_Panel()
     {
         // Arrange

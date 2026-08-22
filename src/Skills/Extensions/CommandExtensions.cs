@@ -58,4 +58,15 @@ internal static class CommandExtensions
 
         return command;
     }
+
+    /// <summary>
+    /// Registers example command lines to render under this command's <c>--help</c> output.
+    /// Each example is the command's arguments/options as typed, without the command name itself
+    /// (for example <c>"owner/repo --skill foo -a claude-code"</c> for <c>add</c>).
+    /// </summary>
+    public static Command AddExamples(this Command command, params string[] examples)
+    {
+        CommandExamples.AddExamples(command, examples);
+        return command;
+    }
 }

@@ -23,6 +23,8 @@ internal sealed class UpdateCommand : Command
         Options.Add(Opt<ProjectOption>.Instance);
         Options.Add(Opt<YesOption>.Instance);
 
+        this.AddExamples("update", "update -g");
+
         this.SetActionWithExceptionHandling(ExecuteAsync);
     }
 

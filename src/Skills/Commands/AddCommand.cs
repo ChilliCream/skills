@@ -20,6 +20,11 @@ internal sealed class AddCommand : Command
         Options.Add(Opt<FullDepthOption>.Instance);
         Options.Add(Opt<ListOption>.Instance);
 
+        this.AddExamples(
+            "add owner/repo",
+            "add owner/repo --skill foo -a claude-code",
+            "add ./local-path --copy");
+
         this.SetActionWithExceptionHandling(ExecuteAsync);
     }
 

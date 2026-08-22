@@ -20,6 +20,8 @@ internal sealed class ListCommand : Command
         Options.Add(Opt<OptionalOutputFormatOption>.Instance);
         Options.Add(Opt<JsonOption>.Instance);
 
+        this.AddExamples("list", "list -g --json");
+
         this.SetActionWithExceptionHandling(ExecuteAsync);
     }
 

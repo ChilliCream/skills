@@ -71,6 +71,7 @@ internal sealed class ConsoleInteractionService(IAnsiConsole? console = null) : 
     {
         if (!IsHumanReadable)
         {
+            Console.Error.WriteLine(message);
             return;
         }
 
@@ -81,6 +82,13 @@ internal sealed class ConsoleInteractionService(IAnsiConsole? console = null) : 
     {
         if (!IsHumanReadable)
         {
+            Console.Error.WriteLine(title);
+            Console.Error.WriteLine(message);
+            if (tip is not null)
+            {
+                Console.Error.WriteLine(tip);
+            }
+
             return;
         }
 

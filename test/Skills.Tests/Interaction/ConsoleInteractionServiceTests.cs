@@ -62,15 +62,26 @@ public class ConsoleInteractionServiceTests
     }
 
     [Fact]
-    public void WriteError_Should_Write_Nothing_When_Output_Format_Is_Json()
+    public void WriteError_Should_Write_To_Stderr_When_Output_Format_Is_Json()
     {
         using var console = new TestConsole();
         var service = new ConsoleInteractionService(console);
         service.SetOutputFormat(OutputFormat.Json);
 
-        service.WriteError("should not appear");
+        var originalError = Console.Error;
+        var stderr = new StringWriter();
+        Console.SetError(stderr);
+        try
+        {
+            service.WriteError("should reach stderr");
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
 
         Assert.Equal("", console.Output);
+        Assert.Contains("should reach stderr", stderr.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

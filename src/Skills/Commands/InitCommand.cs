@@ -1,4 +1,5 @@
 using Skills.Arguments;
+using Skills.Extensions;
 using Skills.Install;
 using Skills.Interaction;
 using Skills.Options;
@@ -9,22 +10,27 @@ using static Skills.KnownConfigNames;
 
 namespace Skills.Commands;
 
-internal sealed class InitCommand(
-    IInteractionService interaction,
-    IFileStore fileStore,
-    ISystemEnvironment systemEnvironment,
-    CliExecutionContext executionContext)
-    : BaseCommand("init", "Initialize a new skill (creates SKILL.md)")
+internal sealed class InitCommand : Command
 {
-    protected override void Configure()
+    public InitCommand() : base("init")
     {
+        Description = "Initialize a new skill (creates SKILL.md)";
+
         Arguments.Add(Opt<OptionalSkillNameArgument>.Instance);
+
+        this.SetActionWithExceptionHandling(ExecuteAsync);
     }
 
-    protected override async Task<CommandResult> ExecuteAsync(
+    private static async Task<int> ExecuteAsync(
+        ICommandServices services,
         ParseResult parseResult,
         CancellationToken cancellationToken)
     {
+        var interaction = services.GetRequiredService<IInteractionService>();
+        var fileStore = services.GetRequiredService<IFileStore>();
+        var systemEnvironment = services.GetRequiredService<ISystemEnvironment>();
+        var executionContext = services.GetRequiredService<CliExecutionContext>();
+
         var nameArg = parseResult.GetValue(Opt<OptionalSkillNameArgument>.Instance);
 
         var cwd = systemEnvironment.CurrentDirectory;
@@ -57,7 +63,7 @@ internal sealed class InitCommand(
         if (fileStore.FileExists(skillFile))
         {
             interaction.WriteWarning($"Skill already exists at {displayPath}");
-            return new CommandResult.Success();
+            return ExitCodeConstants.Success;
         }
 
         if (hasName)
@@ -85,7 +91,7 @@ internal sealed class InitCommand(
               URL:    Host the file, then {commandName} add https://example.com/{Markup.Escape(displayPath)}
             """);
 
-        return new CommandResult.Success();
+        return ExitCodeConstants.Success;
     }
 
     private static string BuildSkillTemplate(string skillName)

@@ -40,6 +40,7 @@ public class InitCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        CliTestHelper.SetCommandExecutionContext(services);
         var cmd = services.GetRequiredService<InitCommand>();
 
         // Act
@@ -63,6 +64,7 @@ public class InitCommandTests : IDisposable
         var messyDir = Path.Combine(_workspace, "My Skill Dir");
         Directory.CreateDirectory(messyDir);
         var services = CliTestHelper.CreateServiceProvider(workspace: messyDir, useRealFileStore: true);
+        CliTestHelper.SetCommandExecutionContext(services);
         var cmd = services.GetRequiredService<InitCommand>();
 
         // Act
@@ -83,6 +85,7 @@ public class InitCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        CliTestHelper.SetCommandExecutionContext(services);
         var cmd = services.GetRequiredService<InitCommand>();
 
         // Act
@@ -102,6 +105,7 @@ public class InitCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        CliTestHelper.SetCommandExecutionContext(services);
         var cmd = services.GetRequiredService<InitCommand>();
         var parentSentinel = Path.Combine(Path.GetDirectoryName(_workspace)!, "escape", "SKILL.md");
 
@@ -121,6 +125,7 @@ public class InitCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        CliTestHelper.SetCommandExecutionContext(services);
         var cmd = services.GetRequiredService<InitCommand>();
         var absoluteTarget = Path.Combine(Path.GetTempPath(), "skills-evil-" + Guid.NewGuid().ToString("N"));
 
@@ -146,6 +151,7 @@ public class InitCommandTests : IDisposable
         await File.WriteAllTextAsync(existing, "existing content", TestContext.Current.CancellationToken);
 
         var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        CliTestHelper.SetCommandExecutionContext(services);
         var cmd = services.GetRequiredService<InitCommand>();
 
         // Act

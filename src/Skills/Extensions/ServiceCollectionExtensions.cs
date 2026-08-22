@@ -69,7 +69,6 @@ internal static class ServiceCollectionExtensions
         services.AddTransient<AddCommand>();
         services.AddTransient<RemoveCommand>();
         services.AddTransient<ListCommand>();
-        services.AddTransient<InitCommand>();
         services.AddTransient<UpdateCommand>();
         services.AddTransient<SkillsRootCommand>();
 

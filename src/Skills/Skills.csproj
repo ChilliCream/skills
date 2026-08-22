@@ -18,6 +18,10 @@
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Skills.Tests" />
+    <!-- The Skills.Cli project sets AssemblyName=skills (the release binary name), so the
+         InternalsVisibleTo target is the assembly name "skills", not the project name. -->
+    <InternalsVisibleTo Include="skills" />
+    <InternalsVisibleTo Include="Skills.Tool" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Skills" />

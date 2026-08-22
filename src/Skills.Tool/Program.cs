@@ -5,4 +5,4 @@ var commandName = Assembly.GetExecutingAssembly()
     .FirstOrDefault(a => a.Key == "ToolCommandName")
     ?.Value;
 
-return await Skills.Program.RunAsync(args, commandName);
+return await Skills.Cli.Program.RunAsync(args, commandName);

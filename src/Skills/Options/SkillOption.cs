@@ -1,3 +1,5 @@
+using Skills.Extensions;
+
 namespace Skills.Options;
 
 internal sealed class SkillOption : Option<string[]>
@@ -8,5 +10,6 @@ internal sealed class SkillOption : Option<string[]>
     {
         Description = "Skill name filter(s)";
         AllowMultipleArgumentsPerToken = true;
+        this.NonEmptyStringsOnly();
     }
 }

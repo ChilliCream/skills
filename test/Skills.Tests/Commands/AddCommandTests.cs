@@ -452,6 +452,38 @@ public class AddCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Add_With_Empty_Agent_Value_Fails_Parsing()
+    {
+        // Arrange
+        var services = CliTestHelper.CreateServiceProvider();
+
+        // Act
+        var cmd = services.GetRequiredService<AddCommand>();
+        var parseResult = cmd.Parse(["owner/repo", "--agent", ""]);
+        var exitCode = await parseResult.InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains(parseResult.Errors, e => e.Message.Contains("--agent", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Add_With_Whitespace_Skill_Value_Fails_Parsing()
+    {
+        // Arrange
+        var services = CliTestHelper.CreateServiceProvider();
+
+        // Act
+        var cmd = services.GetRequiredService<AddCommand>();
+        var parseResult = cmd.Parse(["owner/repo", "--skill", " "]);
+        var exitCode = await parseResult.InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains(parseResult.Errors, e => e.Message.Contains("--skill", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Add_With_Invalid_Agent_Returns_Failure()
     {
         // Arrange

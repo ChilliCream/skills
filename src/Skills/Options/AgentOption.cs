@@ -1,3 +1,5 @@
+using Skills.Extensions;
+
 namespace Skills.Options;
 
 internal sealed class AgentOption : Option<string[]>
@@ -8,5 +10,6 @@ internal sealed class AgentOption : Option<string[]>
     {
         Description = "Target agent(s)";
         AllowMultipleArgumentsPerToken = true;
+        this.NonEmptyStringsOnly();
     }
 }

@@ -1,7 +1,9 @@
 using System.Collections.Immutable;
 using System.Text.Json;
+using Skills.Commands.List.Options;
 using Skills.Install;
 using Skills.Interaction;
+using Skills.Options;
 using Skills.Paths;
 using Skills.Skills;
 using Skills.Utils;
@@ -16,43 +18,22 @@ internal sealed class ListCommand(
     ISystemEnvironment systemEnvironment,
     CliExecutionContext executionContext) : BaseCommand("list", "List installed skills")
 {
-    private readonly Option<bool> _globalOption = new(CommonOptionNames.Global, "-g")
-    {
-        Description = "List global skills"
-    };
-
-    private readonly Option<string[]> _agentOption = new(CommonOptionNames.Agent, "-a")
-    {
-        Description = "Filter by agent",
-        AllowMultipleArgumentsPerToken = true
-    };
-
-    private readonly Option<string?> _formatOption = new(CommonOptionNames.FormatJson)
-    {
-        Description = "Output format (text|json)"
-    };
-
-    private readonly Option<bool> _jsonOption = new("--json")
-    {
-        Description = "Output as JSON (alias for --format json)"
-    };
-
     protected override void Configure()
     {
-        Options.Add(_globalOption);
-        Options.Add(_agentOption);
-        Options.Add(_formatOption);
-        Options.Add(_jsonOption);
+        Options.Add(Opt<GlobalOption>.Instance);
+        Options.Add(Opt<AgentOption>.Instance);
+        Options.Add(Opt<OptionalOutputFormatOption>.Instance);
+        Options.Add(Opt<JsonOption>.Instance);
     }
 
     protected override async Task<CommandResult> ExecuteAsync(
         ParseResult parseResult,
         CancellationToken cancellationToken)
     {
-        var global = parseResult.GetValue(_globalOption);
-        var agents = parseResult.GetValue(_agentOption) ?? [];
-        var format = parseResult.GetValue(_formatOption);
-        var jsonFlag = parseResult.GetValue(_jsonOption);
+        var global = parseResult.GetValue(Opt<GlobalOption>.Instance);
+        var agents = parseResult.GetValue(Opt<AgentOption>.Instance) ?? [];
+        var format = parseResult.GetValue(Opt<OptionalOutputFormatOption>.Instance);
+        var jsonFlag = parseResult.GetValue(Opt<JsonOption>.Instance);
         var jsonOutput = jsonFlag || format.EqualsOrdinalIgnoreCase("json");
 
         executionContext.IsJsonOutput = jsonOutput;

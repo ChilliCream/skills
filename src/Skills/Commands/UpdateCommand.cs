@@ -1,7 +1,10 @@
 using System.Collections.Immutable;
+using Skills.Commands.Update.Arguments;
+using Skills.Commands.Update.Options;
 using Skills.Interaction;
 using Skills.Locking;
 using Skills.Net;
+using Skills.Options;
 using Skills.Skills;
 using Skills.Utils;
 
@@ -15,42 +18,27 @@ internal sealed class UpdateCommand(
     ConsoleEnvironment consoleEnvironment,
     CliExecutionContext executionContext) : BaseCommand("update", "Check for skill updates.")
 {
-    private readonly Argument<string[]> _skillsArgument = new("skills")
-    {
-        Description = "Optional skill names to update.",
-        Arity = ArgumentArity.ZeroOrMore
-    };
-
-    private readonly Option<bool> _globalOption = new("--global", "-g") { Description = "Update global skills only." };
-
-    private readonly Option<bool> _projectOption = new("--project", "-p")
-    {
-        Description = "Update project skills only."
-    };
-
-    private readonly Option<bool> _yesOption = new("--yes", "-y") { Description = "Skip interactive prompts." };
-
     protected override void Configure()
     {
         Aliases.Add("upgrade");
         Aliases.Add("check");
-        Arguments.Add(_skillsArgument);
-        Options.Add(_globalOption);
-        Options.Add(_projectOption);
-        Options.Add(_yesOption);
+        Arguments.Add(Opt<SkillsArgument>.Instance);
+        Options.Add(Opt<GlobalOption>.Instance);
+        Options.Add(Opt<ProjectOption>.Instance);
+        Options.Add(Opt<YesOption>.Instance);
     }
 
     protected override async Task<CommandResult> ExecuteAsync(
         ParseResult parseResult,
         CancellationToken cancellationToken)
     {
-        var skills = parseResult.GetValue(_skillsArgument);
+        var skills = parseResult.GetValue(Opt<SkillsArgument>.Instance);
         var skillFilter = skills is { Length: > 0 } ? skills : null;
 
         var options = new UpdateCheckOptions(
-            parseResult.GetValue(_globalOption),
-            parseResult.GetValue(_projectOption),
-            parseResult.GetValue(_yesOption),
+            parseResult.GetValue(Opt<GlobalOption>.Instance),
+            parseResult.GetValue(Opt<ProjectOption>.Instance),
+            parseResult.GetValue(Opt<YesOption>.Instance),
             skillFilter);
 
         var scope = await ResolveScopeAsync(options, cancellationToken);

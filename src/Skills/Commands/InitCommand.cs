@@ -1,5 +1,7 @@
+using Skills.Arguments;
 using Skills.Install;
 using Skills.Interaction;
+using Skills.Options;
 using Skills.Paths;
 using Skills.Skills;
 using Skills.Utils;
@@ -14,22 +16,16 @@ internal sealed class InitCommand(
     CliExecutionContext executionContext)
     : BaseCommand("init", "Initialize a new skill (creates SKILL.md)")
 {
-    private readonly Argument<string?> _nameArgument = new("name")
-    {
-        Description = "Skill name (creates <name>/SKILL.md). Defaults to current directory.",
-        Arity = ArgumentArity.ZeroOrOne
-    };
-
     protected override void Configure()
     {
-        Arguments.Add(_nameArgument);
+        Arguments.Add(Opt<OptionalSkillNameArgument>.Instance);
     }
 
     protected override async Task<CommandResult> ExecuteAsync(
         ParseResult parseResult,
         CancellationToken cancellationToken)
     {
-        var nameArg = parseResult.GetValue(_nameArgument);
+        var nameArg = parseResult.GetValue(Opt<OptionalSkillNameArgument>.Instance);
 
         var cwd = systemEnvironment.CurrentDirectory;
         var hasName = !string.IsNullOrEmpty(nameArg);

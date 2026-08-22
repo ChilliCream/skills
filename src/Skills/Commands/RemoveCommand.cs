@@ -1,7 +1,10 @@
 using System.Collections.Immutable;
+using Skills.Commands.Remove.Arguments;
+using Skills.Commands.Remove.Options;
 using Skills.Install;
 using Skills.Interaction;
 using Skills.Locking;
+using Skills.Options;
 using Skills.Paths;
 using Skills.Skills;
 using Skills.Utils;
@@ -20,51 +23,24 @@ internal sealed class RemoveCommand(
     ISystemEnvironment systemEnvironment,
     ConsoleEnvironment consoleEnvironment) : BaseCommand("remove", "Remove installed skills")
 {
-    private readonly Argument<string[]> _skillsArgument = new("skills")
-    {
-        Description = "Skill names to remove",
-        Arity = ArgumentArity.ZeroOrMore
-    };
-
-    private readonly Option<bool> _globalOption = new(CommonOptionNames.Global, "-g")
-    {
-        Description = "Remove from global installation"
-    };
-
-    private readonly Option<string[]> _agentOption = new(CommonOptionNames.Agent, "-a")
-    {
-        Description = "Target agent(s)",
-        AllowMultipleArgumentsPerToken = true
-    };
-
-    private readonly Option<bool> _yesOption = new(CommonOptionNames.Yes, "-y")
-    {
-        Description = "Skip prompts (non-interactive)"
-    };
-
-    private readonly Option<bool> _allOption = new(CommonOptionNames.All)
-    {
-        Description = "Remove all installed skills"
-    };
-
     protected override void Configure()
     {
-        Arguments.Add(_skillsArgument);
-        Options.Add(_globalOption);
-        Options.Add(_agentOption);
-        Options.Add(_yesOption);
-        Options.Add(_allOption);
+        Arguments.Add(Opt<SkillsArgument>.Instance);
+        Options.Add(Opt<GlobalOption>.Instance);
+        Options.Add(Opt<AgentOption>.Instance);
+        Options.Add(Opt<YesOption>.Instance);
+        Options.Add(Opt<AllOption>.Instance);
     }
 
     protected override async Task<CommandResult> ExecuteAsync(
         ParseResult parseResult,
         CancellationToken cancellationToken)
     {
-        var requestedSkills = parseResult.GetValue(_skillsArgument) ?? [];
-        var global = parseResult.GetValue(_globalOption);
-        var agents = parseResult.GetValue(_agentOption) ?? [];
-        var yes = parseResult.GetValue(_yesOption);
-        var all = parseResult.GetValue(_allOption);
+        var requestedSkills = parseResult.GetValue(Opt<SkillsArgument>.Instance) ?? [];
+        var global = parseResult.GetValue(Opt<GlobalOption>.Instance);
+        var agents = parseResult.GetValue(Opt<AgentOption>.Instance) ?? [];
+        var yes = parseResult.GetValue(Opt<YesOption>.Instance);
+        var all = parseResult.GetValue(Opt<AllOption>.Instance);
 
         if (agents.Length > 0)
         {

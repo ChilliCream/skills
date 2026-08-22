@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 using Skills.Commands.List.Options;
+using Skills.Extensions;
 using Skills.Install;
 using Skills.Interaction;
 using Skills.Options;
@@ -10,26 +11,30 @@ using Skills.Utils;
 
 namespace Skills.Commands;
 
-internal sealed class ListCommand(
-    ISkillInstaller installer,
-    AgentRegistry registry,
-    IInteractionService interaction,
-    IFileStore fileStore,
-    ISystemEnvironment systemEnvironment,
-    CliExecutionContext executionContext) : BaseCommand("list", "List installed skills")
+internal sealed class ListCommand : Command
 {
-    protected override void Configure()
+    public ListCommand() : base("list", "List installed skills")
     {
         Options.Add(Opt<GlobalOption>.Instance);
         Options.Add(Opt<AgentOption>.Instance);
         Options.Add(Opt<OptionalOutputFormatOption>.Instance);
         Options.Add(Opt<JsonOption>.Instance);
+
+        this.SetActionWithExceptionHandling(ExecuteAsync);
     }
 
-    protected override async Task<CommandResult> ExecuteAsync(
+    private static async Task<int> ExecuteAsync(
+        ICommandServices services,
         ParseResult parseResult,
         CancellationToken cancellationToken)
     {
+        var installer = services.GetRequiredService<ISkillInstaller>();
+        var registry = services.GetRequiredService<AgentRegistry>();
+        var interaction = services.GetRequiredService<IInteractionService>();
+        var fileStore = services.GetRequiredService<IFileStore>();
+        var systemEnvironment = services.GetRequiredService<ISystemEnvironment>();
+        var executionContext = services.GetRequiredService<CliExecutionContext>();
+
         var global = parseResult.GetValue(Opt<GlobalOption>.Instance);
         var agents = parseResult.GetValue(Opt<AgentOption>.Instance) ?? [];
         var format = parseResult.GetValue(Opt<OptionalOutputFormatOption>.Instance);
@@ -45,11 +50,18 @@ internal sealed class ListCommand(
             if (invalid.Count > 0)
             {
                 interaction.WriteError($"Invalid agents: {invalid.Join(", ")}");
-                return new CommandResult.Failure(ExitCodeConstants.Failure);
+                return ExitCodeConstants.Failure;
             }
         }
 
-        var skills = CollectInstalledSkills(installer, registry, agents, global, cancellationToken);
+        var skills = CollectInstalledSkills(
+            installer,
+            registry,
+            fileStore,
+            systemEnvironment,
+            agents,
+            global,
+            cancellationToken);
 
         if (jsonOutput)
         {
@@ -57,7 +69,7 @@ internal sealed class ListCommand(
 
             var json = JsonSerializer.Serialize(payload, JsonSourceGenerationContext.Default.InstalledSkillJsonArray);
             Console.WriteLine(json);
-            return new CommandResult.Success();
+            return ExitCodeConstants.Success;
         }
 
         if (skills.Length == 0)
@@ -67,7 +79,7 @@ internal sealed class ListCommand(
             {
                 interaction.WriteDim("Try listing global skills with -g");
             }
-            return new CommandResult.Success();
+            return ExitCodeConstants.Success;
         }
 
         var scopeLabel = global ? "Global" : "Project";
@@ -106,12 +118,14 @@ internal sealed class ListCommand(
 
         interaction.WriteRenderable(grid);
 
-        return new CommandResult.Success();
+        return ExitCodeConstants.Success;
     }
 
-    private ImmutableArray<InstalledSkill> CollectInstalledSkills(
+    private static ImmutableArray<InstalledSkill> CollectInstalledSkills(
         ISkillInstaller installer,
         AgentRegistry registry,
+        IFileStore fileStore,
+        ISystemEnvironment systemEnvironment,
         string[] agents,
         bool global,
         CancellationToken cancellationToken)

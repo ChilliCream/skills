@@ -63,6 +63,7 @@ public class RemoveCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        CliTestHelper.SetCommandExecutionContext(services);
         var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
         ConfigureInstaller(installer);
 
@@ -87,6 +88,7 @@ public class RemoveCommandTests : IDisposable
         CreateSkill(canonical, "beta");
 
         var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        CliTestHelper.SetCommandExecutionContext(services);
         var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
         ConfigureInstaller(installer);
 
@@ -120,6 +122,7 @@ public class RemoveCommandTests : IDisposable
         CreateSkill(canonical, "beta");
 
         var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        CliTestHelper.SetCommandExecutionContext(services);
         var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
         ConfigureInstaller(installer);
 
@@ -147,6 +150,7 @@ public class RemoveCommandTests : IDisposable
         CreateSkill(canonical, "My Skill");
 
         var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        CliTestHelper.SetCommandExecutionContext(services);
         var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
         installer.OnGetCanonicalSkillsDir = (_, cwd) => Path.Combine(cwd ?? _workspace, ".agents", "skills");
         installer.OnGetAgentBaseDir = (_, _, cwd) => Path.Combine(cwd ?? _workspace, ".agents", "skills");
@@ -180,6 +184,7 @@ public class RemoveCommandTests : IDisposable
         var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true, configure: s =>
             s.AddSingleton<ConsoleEnvironment>(new TestConsoleEnvironment { InputRedirected = false })
         );
+        CliTestHelper.SetCommandExecutionContext(services);
 
         var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
         ConfigureInstaller(installer);

@@ -24,7 +24,7 @@ internal sealed class AddCommandExecutor(
     IFileStore fileStore,
     ConsoleEnvironment consoleEnvironment)
 {
-    public async Task<CommandResult> RunAsync(AddCommandOptions options, CancellationToken cancellationToken)
+    public async Task<int> RunAsync(AddCommandOptions options, CancellationToken cancellationToken)
     {
         try
         {
@@ -41,16 +41,16 @@ internal sealed class AddCommandExecutor(
                 interaction.WriteError(ex.Message);
             }
 
-            return new CommandResult.Failure(ex.ExitCode);
+            return ex.ExitCode;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             interaction.WriteError(ex.Message);
-            return new CommandResult.Failure(ExitCodeConstants.Failure);
+            return ExitCodeConstants.Failure;
         }
     }
 
-    private async Task<CommandResult> RunCoreAsync(AddCommandOptions options, CancellationToken cancellationToken)
+    private async Task<int> RunCoreAsync(AddCommandOptions options, CancellationToken cancellationToken)
     {
         // Resolve the source argument (owner/repo, URL, or local path) into a typed source.
         var parsed = sourceParser.Parse(options.Source!);
@@ -97,7 +97,7 @@ internal sealed class AddCommandExecutor(
             if (options.List)
             {
                 RenderListSkills(skills.ApplyFilters(skillFilters));
-                return new CommandResult.Success();
+                return ExitCodeConstants.Success;
             }
 
             return await RunInstallationAsync(parsed, skills, skillFilters, options, cancellationToken);
@@ -136,7 +136,7 @@ internal sealed class AddCommandExecutor(
         }
     }
 
-    private async Task<CommandResult> RunInstallationAsync(
+    private async Task<int> RunInstallationAsync(
         SkillSource parsed,
         ImmutableArray<ResolvedSkill> skills,
         ImmutableArray<string> skillFilters,
@@ -154,10 +154,10 @@ internal sealed class AddCommandExecutor(
                 {
                     interaction.WriteLine($"  {s.InstallName}");
                 }
-                return new CommandResult.Failure(ExitCodeConstants.Failure);
+                return ExitCodeConstants.Failure;
             }
             interaction.WriteWarning("Installation cancelled");
-            return new CommandResult.Cancelled();
+            return ExitCodeConstants.Cancelled;
         }
 
         var nonInteractive = options.Yes || options.All || consoleEnvironment.IsInputRedirected;
@@ -165,7 +165,7 @@ internal sealed class AddCommandExecutor(
         var selectedAgents = await SelectAgentsAsync(options, nonInteractive, cancellationToken);
         if (selectedAgents is not { } targetAgents)
         {
-            return new CommandResult.Cancelled();
+            return ExitCodeConstants.Cancelled;
         }
 
         if (targetAgents.Length == 0)
@@ -213,7 +213,7 @@ internal sealed class AddCommandExecutor(
             if (!confirmed)
             {
                 interaction.WriteWarning("Installation cancelled");
-                return new CommandResult.Cancelled();
+                return ExitCodeConstants.Cancelled;
             }
         }
 
@@ -240,7 +240,7 @@ internal sealed class AddCommandExecutor(
 
         RenderInstallationReport(targetAgents, successful, failed, existingSkills, installGlobally, installMode);
 
-        return failed.Length > 0 ? new CommandResult.Failure(ExitCodeConstants.Failure) : new CommandResult.Success();
+        return failed.Length > 0 ? ExitCodeConstants.Failure : ExitCodeConstants.Success;
     }
 
     private void RenderInstallationReport(

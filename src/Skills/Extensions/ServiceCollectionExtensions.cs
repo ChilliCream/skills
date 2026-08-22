@@ -66,11 +66,6 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<IRemoveCommandPrompter, RemoveCommandPrompter>();
 
         services.AddTransient<AddCommandExecutor>();
-        services.AddTransient<AddCommand>();
-        services.AddTransient<RemoveCommand>();
-        services.AddTransient<ListCommand>();
-        services.AddTransient<UpdateCommand>();
-        services.AddTransient<SkillsRootCommand>();
 
         return services;
     }

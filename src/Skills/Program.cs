@@ -33,7 +33,7 @@ internal static class Program
         {
             await using var provider = services.BuildServiceProvider();
 
-            var rootCommand = provider.GetRequiredService<SkillsRootCommand>();
+            var rootCommand = new SkillsRootCommand();
 
             return await rootCommand.ExecuteAsync(args, provider, invocationConfiguration: null, cts.Token);
         }

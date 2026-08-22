@@ -41,8 +41,7 @@ internal sealed class AddCommand : Command
             return ExitCodeConstants.Failure;
         }
 
-        var result = await executor.RunAsync(options, cancellationToken);
-        return result.ExitCode;
+        return await executor.RunAsync(options, cancellationToken);
     }
 
     private static AddCommandOptions ParseOptions(ParseResult parseResult)

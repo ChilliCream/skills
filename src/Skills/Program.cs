@@ -58,7 +58,7 @@ internal static class Program
         }
     }
 
-    // Strips bare `--` tokens — the CLI has no pass-through commands, so the argument terminator
+    // Strips bare `--` tokens. The CLI has no pass-through commands, so the argument terminator
     // is meaningless here and would only confuse System.CommandLine's parsing.
     internal static string[] StripBareTerminators(IReadOnlyList<string> args) => args.Where(a => a != "--").ToArray();
 }

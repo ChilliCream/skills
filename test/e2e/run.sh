@@ -79,7 +79,7 @@ fi
 #    must never bake a stale binary's output into the committed goldens.
 if [[ ! -x "$BIN_DIR/skills" || "${REBUILD:-0}" == "1" || "$UPDATE" == "1" ]]; then
   echo "==> publishing skills (linux-x64, self-contained)"
-  dotnet publish "$REPO_ROOT/src/Skills/Skills.csproj" \
+  dotnet publish "$REPO_ROOT/src/Skills.Cli/Skills.Cli.csproj" \
     -c Release -f net10.0 -r linux-x64 --self-contained \
     -p:PublishAot=false -p:PublishSingleFile=true -p:PublishTrimmed=false \
     -o "$BIN_DIR" >/dev/null

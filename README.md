@@ -67,17 +67,17 @@ dotnet test
 ## Run locally
 
 ```bash
-dotnet run --project src/Skills -- add anthropics/skills
+dotnet run --project src/Skills.Cli -- add anthropics/skills
 ```
 
 ## Publish AOT
 
 ```bash
-dotnet publish src/Skills -c Release -r linux-x64
+dotnet publish src/Skills.Cli -c Release -r linux-x64
 ```
 
 Produces a single self-contained `skills` binary at
-`src/Skills/bin/Release/<tfm>/linux-x64/publish/skills`.
+`src/Skills.Cli/bin/Release/<tfm>/linux-x64/publish/skills`.
 
 ## Pack the tool
 

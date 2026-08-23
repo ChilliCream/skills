@@ -36,14 +36,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IInteractionService, ConsoleInteractionService>();
         services.AddSingleton<BannerService>();
 
-        services.ConfigureHttpClientDefaults(http =>
-        {
-            http.ConfigureHttpClient(client => client.MaxResponseContentBufferSize = BlobClient.MaxResponseBytes);
-            http.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
-        });
-
-        services.AddHttpClient(BlobClient.HttpClientName);
-        services.AddHttpClient(WellKnownProvider.HttpClientName);
+        services.AddHttpClient(BlobClient.HttpClientName)
+            .ConfigureHttpClient(client => client.MaxResponseContentBufferSize = BlobClient.MaxResponseBytes)
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        services.AddHttpClient(WellKnownProvider.HttpClientName)
+            .ConfigureHttpClient(client => client.MaxResponseContentBufferSize = BlobClient.MaxResponseBytes)
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 
         services.AddSingleton<IGitClient, GitClient>();
         services.AddSingleton<IGitHubTokenProvider, GitHubTokenProvider>();

@@ -136,4 +136,30 @@ public class ListCommandTests : IDisposable
         Assert.Contains("alpha", stdout);
         Assert.Contains("\"scope\"", stdout);
     }
+
+    [Fact]
+    public async Task List_With_Invalid_Agent_Reports_Titled_Hint()
+    {
+        // Arrange
+        var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
+        ConfigureInstaller(installer);
+
+        // Act
+        var cmd = services.GetRequiredService<ListCommand>();
+        var parseResult = cmd.Parse(["--agent", "bogus"]);
+        var exitCode = await parseResult.InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(1, exitCode);
+        var interaction = (TestInteractionService)services.GetRequiredService<IInteractionService>();
+        Assert.Contains(
+            interaction.Output,
+            line => line.Contains("Invalid agents", StringComparison.Ordinal)
+                && line.Contains("bogus", StringComparison.Ordinal));
+        Assert.Contains(
+            interaction.Output,
+            line => line.Contains("TIP:", StringComparison.Ordinal)
+                && line.Contains("Valid agents", StringComparison.Ordinal));
+    }
 }

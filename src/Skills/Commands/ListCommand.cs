@@ -46,16 +46,7 @@ internal sealed class ListCommand : Command
             interaction.SetOutputFormat(OutputFormat.Json);
         }
 
-        if (agents.Length > 0)
-        {
-            var valid = registry.AgentTypes;
-            var invalid = agents.Where(a => !valid.Contains(a)).ToList();
-            if (invalid.Count > 0)
-            {
-                interaction.WriteError($"Invalid agents: {invalid.Join(", ")}");
-                return ExitCodeConstants.Failure;
-            }
-        }
+        AgentValidation.EnsureValidAgents(agents, registry.AgentTypes);
 
         var skills = CollectInstalledSkills(
             installer,

@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Skills.Commands.Update.Arguments;
 using Skills.Commands.Update.Options;
 using Skills.Extensions;
+using Skills.Install;
 using Skills.Interaction;
 using Skills.Locking;
 using Skills.Net;
@@ -38,6 +39,7 @@ internal sealed class UpdateCommand : Command
         var projectLockFile = services.GetRequiredService<IProjectLockFile>();
         var blobClient = services.GetRequiredService<IBlobClient>();
         var consoleEnvironment = services.GetRequiredService<ConsoleEnvironment>();
+        var agentEnvironment = services.GetRequiredService<AgentEnvironment>();
         var executionContext = services.GetRequiredService<CliExecutionContext>();
 
         var skills = parseResult.GetValue(Opt<SkillsArgument>.Instance);
@@ -49,7 +51,7 @@ internal sealed class UpdateCommand : Command
             parseResult.GetValue(Opt<YesOption>.Instance),
             skillFilter);
 
-        var scope = await ResolveScopeAsync(interaction, consoleEnvironment, options, cancellationToken);
+        var scope = await ResolveScopeAsync(interaction, consoleEnvironment, agentEnvironment, options, cancellationToken);
 
         if (skillFilter is not null)
         {
@@ -133,6 +135,7 @@ internal sealed class UpdateCommand : Command
     private static async Task<UpdateScope> ResolveScopeAsync(
         IInteractionService interaction,
         ConsoleEnvironment consoleEnvironment,
+        AgentEnvironment agentEnvironment,
         UpdateCheckOptions options,
         CancellationToken cancellationToken)
     {
@@ -158,14 +161,15 @@ internal sealed class UpdateCommand : Command
             return UpdateScope.Both;
         }
 
-        // No explicit scope flag. In non-interactive mode (an explicit -y or redirected input)
-        // we cannot ask the user, and there is no reliable, side-effect-free way to know whether
-        // the current directory has project skills (they may live in agent-specific dirs that the
-        // command does not track). Rather than silently guess one scope and risk checking the
-        // wrong one, default to checking BOTH global and project skills. This is the safe,
-        // predictable choice: nothing is ever silently mis-scoped, and a redundant scope merely
-        // reports "no skills" for the empty side.
-        if (options.Yes || consoleEnvironment.IsInputRedirected)
+        // No explicit scope flag. In non-interactive mode (an explicit -y, redirected input, or
+        // running inside an agent host that cannot answer a prompt) we cannot ask the user, and
+        // there is no reliable, side-effect-free way to know whether the current directory has
+        // project skills (they may live in agent-specific dirs that the command does not track).
+        // Rather than silently guess one scope and risk checking the wrong one, default to
+        // checking BOTH global and project skills. This is the safe, predictable choice: nothing
+        // is ever silently mis-scoped, and a redundant scope merely reports "no skills" for the
+        // empty side.
+        if (options.Yes || consoleEnvironment.IsInputRedirected || agentEnvironment.IsRunningInsideAgent)
         {
             return UpdateScope.Both;
         }

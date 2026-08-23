@@ -49,16 +49,7 @@ internal sealed class RemoveCommand : Command
         var yes = parseResult.GetValue(Opt<YesOption>.Instance);
         var all = parseResult.GetValue(Opt<AllOption>.Instance);
 
-        if (agents.Length > 0)
-        {
-            var valid = registry.AgentTypes;
-            var invalid = agents.Where(a => !valid.Contains(a)).ToList();
-            if (invalid.Count > 0)
-            {
-                interaction.WriteError($"Invalid agents: {invalid.Join(", ")}");
-                return ExitCodeConstants.Failure;
-            }
-        }
+        AgentValidation.EnsureValidAgents(agents, registry.AgentTypes);
 
         var cwd = systemEnvironment.CurrentDirectory;
         var installed = CollectInstalledSkills(installer, registry, fileStore, cwd, global);

@@ -450,18 +450,7 @@ internal sealed class AddCommandExecutor(
                 return validAgents;
             }
 
-            var invalid = options.Agents.Where(a => !validAgents.Contains(a)).ToList();
-            if (invalid.Count > 0)
-            {
-                // Sort the advisory list so the hint is deterministic and easy to scan; the
-                // registry's own order is hash-bucket order and not meaningful to the user.
-                var sortedValid = validAgents.OrderBy(a => a, StringComparer.Ordinal);
-                throw new CliException(
-                    ExitCodeConstants.Failure,
-                    $"Invalid agents: {invalid.Join(", ")}",
-                    title: "Invalid agents",
-                    hint: $"Valid agents: {sortedValid.Join(", ")}");
-            }
+            AgentValidation.EnsureValidAgents(options.Agents, validAgents);
 
             return options.Agents;
         }

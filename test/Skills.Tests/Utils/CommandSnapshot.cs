@@ -24,9 +24,6 @@ internal static class CommandSnapshot
 {
     public static async Task<string> RunAsync(IServiceProvider services, params string[] args)
     {
-        // SkillsRootCommand captures this provider in its own constructor, so resolving it here
-        // is enough to make the command tree resolve the fakes CliTestHelper.CreateServiceProvider
-        // registers when it runs.
         var root = services.GetRequiredService<SkillsRootCommand>();
         var interaction = (TestInteractionService)services.GetRequiredService<IInteractionService>();
 

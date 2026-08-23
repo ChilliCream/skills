@@ -11,9 +11,7 @@ namespace Skills.Tests.Commands;
 
 /// <summary>
 /// Proves the embeddable <see cref="SkillsCommand"/> behaves the same as the standalone
-/// <c>SkillsRootCommand</c> once composed under a host's own root, and that a command composed
-/// with no <see cref="ICommandServicesSource"/> ancestor fails with a named diagnostic rather than
-/// a null dereference.
+/// <c>SkillsRootCommand</c> once composed under a host's own root.
 /// </summary>
 [Collection(CommandTestCollection.Name)]
 public class SkillsCommandEmbeddingTests : IDisposable
@@ -46,6 +44,29 @@ public class SkillsCommandEmbeddingTests : IDisposable
 
         Assert.Equal(standaloneExitCode, embeddedExitCode);
         Assert.Equal(standaloneInteraction.OutputText, embeddedInteraction.OutputText);
+    }
+
+    [Fact]
+    public async Task Embedded_Command_Uses_The_Provider_Passed_To_Its_Constructor()
+    {
+        var services = CliTestHelper.CreateServiceProvider();
+        var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
+        installer.OnGetCanonicalSkillsDir = (_, cwd) => Path.Combine(cwd ?? "/workspace", ".agents", "skills");
+        installer.OnGetAgentBaseDir = (_, _, cwd) => Path.Combine(cwd ?? "/workspace", ".agents", "skills");
+        var interaction = (TestInteractionService)services.GetRequiredService<IInteractionService>();
+
+        var otherServices = CliTestHelper.CreateServiceProvider();
+        var otherInteraction = (TestInteractionService)otherServices.GetRequiredService<IInteractionService>();
+
+        var hostRoot = new RootCommand("host");
+        hostRoot.Subcommands.Add(new SkillsCommand(services));
+
+        var exitCode = await hostRoot.Parse(["skills", "list"])
+            .InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(ExitCodeConstants.Success, exitCode);
+        Assert.Contains("No project skills found.", interaction.Output);
+        Assert.Empty(otherInteraction.Output);
     }
 
     [Fact]
@@ -111,42 +132,6 @@ public class SkillsCommandEmbeddingTests : IDisposable
         Assert.Equal(0, plainExitCode);
         Assert.True(interaction.IsHumanReadable);
         Assert.Contains("No project skills found.", interaction.Output);
-    }
-
-    [Fact]
-    public async Task Composing_Without_An_ICommandServicesSource_Ancestor_Fails_With_A_Named_Diagnostic()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        var command = new AddCommand();
-
-        var stderr = new StringWriter();
-        var originalError = Console.Error;
-        Console.SetError(stderr);
-        int exitCode;
-        try
-        {
-            exitCode = await command.Parse([]).InvokeAsync(cancellationToken: ct);
-        }
-        finally
-        {
-            Console.SetError(originalError);
-        }
-
-        Assert.NotEqual(0, exitCode);
-        var message = stderr.ToString();
-        Assert.DoesNotContain("NullReferenceException", message);
-        Assert.Contains(nameof(InvalidOperationException), message);
-        Assert.Contains("must be composed under SkillsCommand or SkillsRootCommand", message);
-    }
-
-    [Fact]
-    public void CommandServicesResolver_Throws_A_Named_Diagnostic_For_An_Unparented_Command()
-    {
-        var command = new AddCommand();
-
-        var exception = Assert.Throws<InvalidOperationException>(() => CommandServicesResolver.Resolve(command));
-
-        Assert.Contains("must be composed under SkillsCommand or SkillsRootCommand", exception.Message);
     }
 
     private static void TryDelete(string path)

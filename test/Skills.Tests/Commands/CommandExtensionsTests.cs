@@ -23,8 +23,6 @@ public class CommandExtensionsTests
             return Task.FromResult(ExitCodeConstants.Success);
         });
 
-        CliTestHelper.AttachCommandServices(provider, command);
-
         return (command, interaction);
     }
 

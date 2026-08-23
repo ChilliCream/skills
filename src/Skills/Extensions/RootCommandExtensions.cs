@@ -14,6 +14,8 @@ internal static class RootCommandExtensions
         InvocationConfiguration? invocationConfiguration,
         CancellationToken cancellationToken)
     {
+        CommandExecutionContext.s_services.Value = new CommandServices(services);
+
         var strippedArgs = StripBareTerminators(args);
 
         if (strippedArgs.Length == 0)

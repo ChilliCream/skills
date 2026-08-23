@@ -14,8 +14,7 @@ internal static class CommandExtensions
     {
         command.SetAction(async (parseResult, cancellationToken) =>
         {
-            // Resolve services from the command tree so embedded commands use their host's services.
-            var services = CommandServicesResolver.Resolve(parseResult.CommandResult.Command);
+            var services = CommandExecutionContext.s_services.Value!;
             var interaction = services.GetRequiredService<IInteractionService>();
 
             // Reset the format on every invocation because hosts may reuse the interaction service.

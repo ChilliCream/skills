@@ -43,10 +43,7 @@ internal sealed class ExamplesHelpAction(HelpAction defaultHelp) : SynchronousCo
 
         if (CommandExamples.TryGetExamples(command, out var examples) && examples is not null)
         {
-            // Help can render before a command action ever runs (it is its own HelpOption
-            // action), so this uses the null-tolerant TryResolve and falls back to the default
-            // command name rather than throwing.
-            var services = CommandServicesResolver.TryResolve(command);
+            var services = CommandExecutionContext.s_services.Value;
             var commandName = services?.GetRequiredService<CliExecutionContext>().CommandName ?? "skills";
 
             var output = parseResult.InvocationConfiguration.Output;

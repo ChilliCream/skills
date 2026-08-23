@@ -97,17 +97,11 @@ internal static class CliTestHelper
 
         services.AddTransient<AddCommandExecutor>();
 
-        // Commands resolved directly (rather than through SkillsRootCommand/SkillsCommand) still
-        // need an ICommandServicesSource ancestor for CommandServicesResolver to find, the same
-        // way a real composition root provides one. Each factory parents the freshly built
-        // command under a throwaway root wired to this same provider before handing it back, so
-        // `services.GetRequiredService<AddCommand>()` followed by `cmd.Parse(args)` keeps working
-        // unchanged at every call site.
-        services.AddTransient<AddCommand>(sp => AttachCommandServices(sp, new AddCommand()));
-        services.AddTransient<RemoveCommand>(sp => AttachCommandServices(sp, new RemoveCommand()));
-        services.AddTransient<ListCommand>(sp => AttachCommandServices(sp, new ListCommand()));
-        services.AddTransient<InitCommand>(sp => AttachCommandServices(sp, new InitCommand()));
-        services.AddTransient<UpdateCommand>(sp => AttachCommandServices(sp, new UpdateCommand()));
+        services.AddTransient<AddCommand>();
+        services.AddTransient<RemoveCommand>();
+        services.AddTransient<ListCommand>();
+        services.AddTransient<InitCommand>();
+        services.AddTransient<UpdateCommand>();
         services.AddTransient<SkillsRootCommand>();
 
         if (workspace is not null)
@@ -117,32 +111,10 @@ internal static class CliTestHelper
 
         configure?.Invoke(services);
 
-        return services.BuildServiceProvider();
-    }
-
-    /// <summary>
-    /// Parents <paramref name="command"/> under a throwaway root implementing
-    /// <see cref="ICommandServicesSource"/> so <see cref="CommandServicesResolver"/> resolves the
-    /// fakes <paramref name="services"/> registers when the command is parsed and invoked
-    /// directly, the same way a real host's <c>SkillsCommand</c> composition does. Returns
-    /// <paramref name="command"/> so it composes into a DI factory registration.
-    /// </summary>
-    public static TCommand AttachCommandServices<TCommand>(IServiceProvider services, TCommand command)
-        where TCommand : Command
-    {
-        var root = new TestServicesRoot(services);
-        root.Subcommands.Add(command);
-        return command;
+        var provider = services.BuildServiceProvider();
+        CommandExecutionContext.s_services.Value = new CommandServices(provider);
+        return provider;
     }
 }
 
 internal sealed record TestWorkspace(string Path);
-
-/// <summary>
-/// A minimal <see cref="ICommandServicesSource"/> root used to parent a command under test so it
-/// resolves services the same way <c>SkillsRootCommand</c>/<c>SkillsCommand</c> do in production.
-/// </summary>
-internal sealed class TestServicesRoot(IServiceProvider services) : RootCommand("test-root"), ICommandServicesSource
-{
-    ICommandServices ICommandServicesSource.CommandServices { get; } = new CommandServices(services);
-}

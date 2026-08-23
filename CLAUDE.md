@@ -34,15 +34,9 @@ below.
   not for what it reports.
 - **Services**: resolve everything the handler needs from `ICommandServices`
   inside `ExecuteAsync`. Commands take no constructor dependencies.
-- **DI-constructor exception**: the parameterless-constructor rule above
-  applies to the five `{Verb}Command` leaves only. The two composition roots,
-  `SkillsCommand` (public, embeddable) and `SkillsRootCommand` (internal,
-  standalone), each take `IServiceProvider` and are the deliberate seam where
-  DI enters the tree: they wrap it in `ICommandServices` and expose it through
-  `ICommandServicesSource`, which `CommandServicesResolver` walks
-  `Symbol.Parents` to find from any leaf command's `ExecuteAsync`. Do not add
-  a third way to get services into a command; a new composition root follows
-  this same constructor shape instead.
+- **Services initialization**: standalone execution stores the provider in
+  `CommandExecutionContext` before parsing. An embedding host passes its
+  provider to `SkillsCommand`, which initializes the same context.
 
 ```csharp
 namespace Skills.Commands;

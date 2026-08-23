@@ -20,14 +20,20 @@ substitute.
   `update`). Always register and read through `Opt<T>.Instance`, never `new`:
   System.CommandLine matches options/arguments by reference, so the registered
   instance and the one read back in `ExecuteAsync` must be the same object.
-- **Errors**: throw `ExitException` (via `ThrowHelper` where a factory
-  already exists) for CLI-layer aborts; an empty-message `ExitException` means
-  the command already reported detail through `IInteractionService`. Throw
-  `CliException` for domain errors that carry an `ExitCode` plus optional
-  `Title`/`Hint` rendered as an error panel. Return codes from
-  `ExitCodeConstants` (`Success`, `Failure`, `Cancelled`). Never call
-  `Environment.Exit`; `SetActionWithExceptionHandling` owns the catch ladder
-  that turns exceptions into exit codes.
+- **Errors**: throw `ExitException` for CLI-layer aborts; an empty-message
+  `ExitException` means the command already reported detail through
+  `IInteractionService`. Throw `CliException` for domain errors that carry an
+  `ExitCode` plus optional `Title`/`Hint` rendered as an error panel. Return
+  codes from `ExitCodeConstants` (`Success`, `Failure`, `Cancelled`). Never
+  call `Environment.Exit`; `SetActionWithExceptionHandling` owns the catch
+  ladder that turns exceptions into exit codes.
+- **Error streams**: human-mode errors go to stderr through the interaction
+  service's stderr-bound `IAnsiConsole`; machine-mode (`--format json`)
+  errors are plain text on stderr too, never mixed into the JSON on stdout.
+- **`update`'s exit code**: `update` returns `ExitCodeConstants.Success` even
+  when some skills fail their update check or updates are found but not
+  applied; a non-zero exit is reserved for the command itself failing to run,
+  not for what it reports.
 - **Services**: resolve everything the handler needs from `ICommandServices`
   inside `ExecuteAsync`. Commands take no constructor dependencies.
 - **DI-constructor exception**: the parameterless-constructor rule above
@@ -65,7 +71,7 @@ internal sealed class GreetCommand : Command
         var name = parseResult.GetValue(Opt<NameArgument>.Instance);
         if (string.IsNullOrWhiteSpace(name))
         {
-            throw ThrowHelper.MissingRequiredArgument(NameArgument.ArgumentName);
+            throw new ExitException($"Missing required argument '{NameArgument.ArgumentName}'.");
         }
 
         var loud = parseResult.GetValue(Opt<LoudOption>.Instance);

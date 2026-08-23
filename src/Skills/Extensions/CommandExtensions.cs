@@ -62,7 +62,7 @@ internal static class CommandExtensions
 
                 return exception.ExitCode;
             }
-            catch (Exception ex) when (ex is OperationCanceledException or TaskCanceledException)
+            catch (OperationCanceledException)
             {
                 return ExitCodeConstants.Cancelled;
             }

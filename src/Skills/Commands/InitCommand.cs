@@ -12,10 +12,8 @@ namespace Skills.Commands;
 
 internal sealed class InitCommand : Command
 {
-    public InitCommand() : base("init")
+    public InitCommand() : base("init", "Initialize a new skill (creates SKILL.md)")
     {
-        Description = "Initialize a new skill (creates SKILL.md)";
-
         Arguments.Add(Opt<OptionalSkillNameArgument>.Instance);
 
         this.AddExamples("init", "init my-skill");

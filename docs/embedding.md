@@ -79,9 +79,8 @@ The snippet above is not prose only: `samples/EmbeddedHost` is a runnable
 project that composes it, with a command of its own next to `SkillsCommand`
 so the wiring is end to end rather than a skills-only root. It also
 publishes AOT in CI, so it is the consumer-side proof that referencing the
-library and publishing AOT stays warning-free (formerly
-`test/Skills.AotConsumer`, moved here in skillz-rn6.7 so the one project
-serves both purposes). See the README for how to run it.
+library and publishing AOT stays warning-free; one project serves as both
+the sample and the AOT proof. See the README for how to run it.
 
 ## Nitro integration note
 

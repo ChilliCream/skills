@@ -1,12 +1,14 @@
 using System.Collections.Immutable;
 using Skills;
 using Skills.Interaction;
+using Skills.Tests.Commands;
 using Spectre.Console;
 using Spectre.Console.Testing;
 using Xunit;
 
 namespace Skills.Tests.Interaction;
 
+[Collection(CommandTestCollection.Name)]
 public class ConsoleInteractionServiceTests
 {
     private static TestConsole CreateInteractiveConsole()

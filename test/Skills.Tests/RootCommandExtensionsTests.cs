@@ -2,12 +2,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Skills.Commands;
 using Skills.Extensions;
 using Skills.Interaction;
+using Skills.Tests.Commands;
 using Skills.Tests.TestServices;
 using Skills.Tests.Utils;
 using Xunit;
 
 namespace Skills.Tests;
 
+[Collection(CommandTestCollection.Name)]
 public class RootCommandExtensionsTests
 {
     [Fact]

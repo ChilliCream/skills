@@ -46,3 +46,14 @@ jobs:
       # references Skills.csproj, must also publish AOT warning-free.
       - name: AOT Publish (embedded host sample)
         run: dotnet publish samples/EmbeddedHost/EmbeddedHost.csproj -c Release -f net10.0 -r ${{ matrix.rid }} --self-contained
+
+      # Publish-time analysis can miss AOT runtime metadata failures (e.g. trimmed reflection
+      # paths that only throw when actually invoked), so run the published binary here too.
+      - name: Run AOT consumer binary
+        shell: bash
+        run: |
+          bin="samples/EmbeddedHost/bin/Release/net10.0/${{ matrix.rid }}/publish/embeddedhost"
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            bin="${bin}.exe"
+          fi
+          "$bin" skills list

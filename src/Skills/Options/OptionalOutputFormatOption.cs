@@ -7,5 +7,6 @@ internal sealed class OptionalOutputFormatOption : Option<string?>
     public OptionalOutputFormatOption() : base(OptionName)
     {
         Description = "Output format (text|json)";
+        AcceptOnlyFromAmong("text", "json");
     }
 }

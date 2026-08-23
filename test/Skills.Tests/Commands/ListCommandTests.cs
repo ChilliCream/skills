@@ -138,6 +138,24 @@ public class ListCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task List_With_Unknown_Format_Fails_Parsing()
+    {
+        // Arrange
+        var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
+        ConfigureInstaller(installer);
+
+        // Act
+        var cmd = services.GetRequiredService<ListCommand>();
+        var parseResult = cmd.Parse(["--format", "josn"]);
+        var exitCode = await parseResult.InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains(parseResult.Errors, e => e.Message.Contains("josn", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task List_With_Invalid_Agent_Reports_Titled_Hint()
     {
         // Arrange

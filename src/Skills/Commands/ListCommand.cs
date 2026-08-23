@@ -38,13 +38,6 @@ internal sealed class ListCommand : Command
 
         var global = parseResult.GetValue(Opt<GlobalOption>.Instance);
         var agents = parseResult.GetValue(Opt<AgentOption>.Instance) ?? [];
-        var format = parseResult.GetValue(Opt<OptionalOutputFormatOption>.Instance);
-        var jsonFlag = parseResult.GetValue(Opt<JsonOption>.Instance);
-
-        if (jsonFlag || format.EqualsOrdinalIgnoreCase("json"))
-        {
-            interaction.SetOutputFormat(OutputFormat.Json);
-        }
 
         AgentValidation.EnsureValidAgents(agents, registry.AgentTypes);
 

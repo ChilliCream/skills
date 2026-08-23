@@ -151,7 +151,7 @@ public class ListCommandTests : IDisposable
         var exitCode = await parseResult.InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.NotEqual(0, exitCode);
+        Assert.Equal(1, exitCode);
         Assert.Contains(parseResult.Errors, e => e.Message.Contains("josn", StringComparison.Ordinal));
     }
 

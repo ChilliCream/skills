@@ -33,7 +33,7 @@ internal static class CommandExtensions
             // one that did not ask for it.
             var format = parseResult.GetValue(Opt<OptionalOutputFormatOption>.Instance);
             var jsonFlag = parseResult.GetValue(Opt<JsonOption>.Instance);
-            interaction.SetOutputFormat(jsonFlag || format.EqualsOrdinalIgnoreCase("json") ? OutputFormat.Json : null);
+            interaction.SetOutputFormat(jsonFlag || format == "json" ? OutputFormat.Json : null);
 
             try
             {

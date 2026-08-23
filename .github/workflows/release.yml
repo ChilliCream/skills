@@ -181,6 +181,10 @@ jobs:
               -p:Version="$VERSION" \
               -p:SkillsToolPackageId="$tool"
           done
+          dotnet pack src/Skills/Skills.csproj \
+            -c Release \
+            -o ./nupkg \
+            -p:Version="$VERSION"
 
       - name: 📤 Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

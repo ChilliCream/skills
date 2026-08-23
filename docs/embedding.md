@@ -4,8 +4,7 @@ Status: design contract for the skillz-rn6 epic (task skillz-rn6.1). No producti
 code changes in this task. The follow-up tasks (project split, public surface,
 embeddable composition, sample host) implement exactly what is written here.
 
-Decision 3 (package identity) is PENDING a user ruling and is marked as such
-below. Decisions 1 and 2 are ruled here.
+Decisions 1, 2 and 3 are ruled here.
 
 This document lives at docs/embedding.md rather than as a CLAUDE.md section
 because it is a host-facing API contract, not an internal coding convention.
@@ -189,29 +188,27 @@ behavior that an embedding host's pipeline will not run. The contract:
 - The exception-to-exit-code ladder and cancellation mapping live in the
   wrapper and therefore already work identically when embedded.
 
-## Decision 3: package identity (PENDING PASCAL, DO NOT PACK)
+## Decision 3: package identity (RULED)
 
-The proposed library package id is `ChilliCream.Skills.CommandLine`,
-mirroring `ChilliCream.Nitro.CommandLine`. **This id is a placeholder. It
-has not been ruled by the user. Nothing may be packed or published under it
-until the ruling lands** (binding comment on skillz-rn6.1; skillz-rn6.6 is
-gated on it). The orchestrator carries this in the deferred-decisions
-report.
+Ruling: the package id stays `Skills.Library`, the value already on
+`Skills.csproj` before this decision was ruled. The proposed
+`ChilliCream.Skills.CommandLine` (mirroring `ChilliCream.Nitro.CommandLine`)
+was not adopted. `IsPackable` is `true` and the library packs and publishes
+under exactly `Skills.Library` (skillz-rn6.6).
 
-Facts the ruling can rely on: `Skills.csproj` declares `PackageId=Skills.Cli`
-with `IsPackable=false`, so that id has never been published.
 `src/Skills.Tool` publishes the tool package ids `skills` and `skillz`
-(`ToolCommandName` `skills`); the library id must collide with neither.
+(`ToolCommandName` `skills`); `Skills.Library` collides with neither.
 
-Related and equally pending: the root namespace is `Skills` today. Whether
-a ChilliCream-branded package id implies a `ChilliCream.*` namespace is part
-of the same ruling; this contract keeps namespaces `Skills.*` until then.
+The root namespace stays `Skills.*`; a `ChilliCream.Skills.CommandLine` id
+would have raised the question of a `ChilliCream.*` namespace to match, but
+since that id was not adopted the namespace is unaffected and remains
+`Skills.*`.
 
 ## Project layout after the split (for skillz-rn6.2)
 
-- `src/Skills` becomes the class library (the future package; `IsPackable`
-  stays `false` until skillz-rn6.6 and the id ruling). It keeps everything
-  it has today except the process entry point: the five commands,
+- `src/Skills` becomes the class library, packed and published as
+  `Skills.Library` (skillz-rn6.6). It keeps everything it has today except
+  the process entry point: the five commands,
   `SkillsCommand` (new), `SkillsRootCommand`, `RootCommandExtensions`,
   `BannerService`, services, options. Public surface as listed above; the
   standalone-only pieces stay internal.

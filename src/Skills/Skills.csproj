@@ -8,8 +8,7 @@
          names). Left at the default ("Skills", from the project file name), that self-loaded
          entry assembly would shadow this library at runtime for every "Skills" reference. An
          explicit, non-colliding name sidesteps it; the namespace and public surface are
-         unaffected. Not published while IsPackable is false; the real package id is a separate,
-         pending decision (docs/embedding.md, Decision 3). -->
+         unaffected. Matches the package id below (docs/embedding.md, Decision 3). -->
     <AssemblyName>Skills.Library</AssemblyName>
     <!-- Turns on the trim, single-file and AOT analyzers at build time for every target
          framework above, so an incompatible pattern fails dotnet build here (an IL2xxx/IL3xxx
@@ -18,9 +17,18 @@
     <IsAotCompatible>true</IsAotCompatible>
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
-    <IsPackable>false</IsPackable>
+    <IsPackable>true</IsPackable>
     <PackageId>Skills.Library</PackageId>
+    <Description>Embeddable System.CommandLine commands for managing AI agent skills. Add `skills add|remove|list|init|update` as a subcommand group to a host CLI's own root command.</Description>
+    <PackageTags>skills;ai-agents;cli;system-commandline</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="../../assets/icon.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Skills.Tests" />
     <!-- The Skills.Cli project sets AssemblyName=skills (the release binary name), so the

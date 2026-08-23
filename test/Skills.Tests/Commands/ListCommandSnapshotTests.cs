@@ -147,11 +147,11 @@ public class ListCommandSnapshotTests : IDisposable
               Skills.Tests list [options]
 
             Options:
-              -g, --global          List global skills
-              -a, --agent <agent>   Target agent(s)
-              --format <json|text>  Output format (text|json)
-              --json                Output as JSON (alias for --format json)
-              -?, -h, --help        Show help and usage information
+              -g, --global                    List global skills
+              -a, --agent <agent>             Target agent(s)
+              --format, --output <json|text>  Output format (text|json)
+              --json                          Output as JSON (alias for --format json)
+              -?, -h, --help                  Show help and usage information
 
             Example:
               skills list

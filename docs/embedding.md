@@ -88,26 +88,40 @@ serves both purposes). See the README for how to run it.
 This is the specific shape a `graphql-platform` maintainer would add, not a
 general pattern; see "Host snippet" above for the general one.
 
-`NitroRootCommand` already composes its subcommands the same way `SkillsCommand`
-expects to be composed:
+`NitroRootCommand` is `internal sealed` with a parameterless constructor;
+Nitro builds its provider in `Program.cs` and passes it to `ExecuteAsync` at
+invocation, not to the root command's constructor. Embedding therefore needs
+one of two explicit edits on Nitro's side:
 
-```csharp
-public sealed class NitroRootCommand : RootCommand
-{
-    public NitroRootCommand(IServiceProvider services) : base("Nitro CLI")
-    {
-        Subcommands.Add(new ApiCommand());
-        Subcommands.Add(new AgentCommand());
-        Subcommands.Add(new SkillsCommand(services));
-    }
-}
-```
+- (a) add `SkillsCommand` in `Program.cs`, after `BuildServiceProvider` and
+  before `ExecuteAsync`, leaving `NitroRootCommand` itself untouched:
+
+  ```csharp
+  var provider = services.BuildServiceProvider();
+  var rootCommand = new NitroRootCommand();
+  rootCommand.Subcommands.Add(new SkillsCommand(provider));
+
+  return await rootCommand.Parse(args).InvokeAsync();
+  ```
+
+- (b) give `NitroRootCommand` an `IServiceProvider` constructor parameter and
+  compose `SkillsCommand` inside it instead; this also requires updating
+  every `new NitroRootCommand()` call site, including the one in
+  `GlobalOptionsTests.cs`.
+
+Option (a) is shown above because it matches the "Host snippet" section's
+`new NitroRootCommand()` call and needs no changes to Nitro's existing
+constructor call sites.
 
 Service registration: call `services.AddSkillsServices(toolCommandName: "nitro skills")`
 on the same `IServiceCollection` that `AddNitroServices()` populates, either
-before or after that call, then build the provider once. Order does not
-matter here because the two registration sets do not share a service type
-and both use plain `Add*`.
+before or after that call, then build the provider once. `AddNitroServices`
+registers throughout with `TryAddSingleton`, and both sides register
+`TimeProvider.System`: Nitro via `TryAddSingleton`, Skills via `AddSingleton`
+(`src/Skills/Extensions/ServiceCollectionExtensions.cs:72`). Order stays
+harmless not because the registrations avoid overlap, but because whichever
+side registers first, the resolved `TimeProvider` is the same
+`TimeProvider.System` instance either way.
 
 Friction point to flag for whoever does this: Nitro resolves its own
 services through its own `internal` `CommandExecutionContext` `AsyncLocal`,

@@ -101,7 +101,7 @@ one of two explicit edits on Nitro's side:
   var rootCommand = new NitroRootCommand();
   rootCommand.Subcommands.Add(new SkillsCommand(provider));
 
-  return await rootCommand.Parse(args).InvokeAsync();
+  return await rootCommand.ExecuteAsync(args, provider, null, cts.Token);
   ```
 
 - (b) give `NitroRootCommand` an `IServiceProvider` constructor parameter and

@@ -26,7 +26,7 @@ internal sealed class AddCommandExecutor(
 {
     // Any exception thrown here (CliException, ExitException, or an unexpected one) is left to
     // unwind to the caller's SetActionWithExceptionHandling ladder, which owns presentation for
-    // every command uniformly; this executor no longer catches anything itself.
+    // every command uniformly.
     public async Task<int> RunAsync(AddCommandOptions options, CancellationToken cancellationToken)
     {
         // Resolve the source argument (owner/repo, URL, or local path) into a typed source.

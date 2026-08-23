@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Not a shipping artifact: this is the consumer-side proof for skillz-rn6.5. It references
+    <!-- Not a shipping artifact: this is the consumer-side AOT proof. It references
          Skills.csproj the way an embedding host (Nitro) would, composes SkillsCommand into its
          own root command per docs/embedding.md, and publishes AOT so CI can assert the library
          is AOT-compatible as a package contract, not just as the standalone skills binary. -->

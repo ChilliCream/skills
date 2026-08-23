@@ -15,7 +15,6 @@ public class CommandExtensionsTests
     {
         var provider = CliTestHelper.CreateServiceProvider();
         var interaction = (TestInteractionService)provider.GetRequiredService<IInteractionService>();
-        CliTestHelper.SetCommandExecutionContext(provider);
 
         var command = new Command("probe");
         command.SetActionWithExceptionHandling((_, _, _) =>
@@ -23,6 +22,8 @@ public class CommandExtensionsTests
             action();
             return Task.FromResult(ExitCodeConstants.Success);
         });
+
+        CliTestHelper.AttachCommandServices(provider, command);
 
         return (command, interaction);
     }

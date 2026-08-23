@@ -38,6 +38,8 @@ public class PublicSurfaceTests
         // the surface anywhere in Skills (a stray "public" on an unrelated type) must show up here.
         string.Join("\n", lines).MatchInlineSnapshot(
             """
+            public sealed class Skills.Commands.SkillsCommand
+                public SkillsCommand(IServiceProvider serviceProvider)
             public static class Skills.Extensions.ServiceCollectionExtensions
                 public static IServiceCollection AddSkillsServices(IServiceCollection services, string toolCommandName)
             """);

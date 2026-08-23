@@ -24,11 +24,9 @@ internal static class CommandSnapshot
 {
     public static async Task<string> RunAsync(IServiceProvider services, params string[] args)
     {
-        // Migrated commands read services from the CommandExecutionContext AsyncLocal instead of
-        // their constructors, so it must point at this invocation's provider before the command
-        // runs to resolve the fakes CliTestHelper.CreateServiceProvider registers.
-        CliTestHelper.SetCommandExecutionContext(services);
-
+        // SkillsRootCommand captures this provider in its own constructor, so resolving it here
+        // is enough to make the command tree resolve the fakes CliTestHelper.CreateServiceProvider
+        // registers when it runs.
         var root = services.GetRequiredService<SkillsRootCommand>();
         var interaction = (TestInteractionService)services.GetRequiredService<IInteractionService>();
 

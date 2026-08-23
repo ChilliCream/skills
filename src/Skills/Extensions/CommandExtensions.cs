@@ -1,4 +1,5 @@
 using Skills.Interaction;
+using Skills.Options;
 
 namespace Skills.Extensions;
 
@@ -17,8 +18,22 @@ internal static class CommandExtensions
     {
         command.SetAction(async (parseResult, cancellationToken) =>
         {
-            var services = CommandExecutionContext.s_services.Value!;
+            // Resolved from the command tree the caller built rather than ambient state, so this
+            // runs identically whether the command was parsed under the standalone
+            // SkillsRootCommand or a host's own root that embedded SkillsCommand. A host that
+            // forgot to compose under either gets a named diagnostic here, not a null dereference.
+            var services = CommandServicesResolver.Resolve(parseResult.CommandResult.Command);
             var interaction = services.GetRequiredService<IInteractionService>();
+
+            // Resolved here rather than in RootCommandExtensions.ExecuteAsync (which a host
+            // pipeline never runs) so the --json/--format json switch behaves identically whether
+            // the command runs standalone or embedded.
+            var format = parseResult.GetValue(Opt<OptionalOutputFormatOption>.Instance);
+            var jsonFlag = parseResult.GetValue(Opt<JsonOption>.Instance);
+            if (jsonFlag || format.EqualsOrdinalIgnoreCase("json"))
+            {
+                interaction.SetOutputFormat(OutputFormat.Json);
+            }
 
             try
             {

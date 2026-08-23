@@ -52,7 +52,7 @@ public static class Program
         {
             await using var provider = services.BuildServiceProvider();
 
-            var rootCommand = new SkillsRootCommand();
+            var rootCommand = new SkillsRootCommand(provider);
 
             return await rootCommand.ExecuteAsync(args, provider, invocationConfiguration: null, cts.Token);
         }

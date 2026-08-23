@@ -1,5 +1,6 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
+using Skills.Extensions;
 using Skills.Git;
 using Skills.Install;
 using Skills.Interaction;
@@ -136,7 +137,7 @@ public class CliTestHelperTests
     }
 
     [Fact]
-    public async Task SetCommandExecutionContext_Resolves_The_Fake_During_A_Command_Invocation()
+    public async Task AttachCommandServices_Resolves_The_Fake_During_A_Command_Invocation()
     {
         // Arrange
         var provider = CliTestHelper.CreateServiceProvider();
@@ -144,10 +145,14 @@ public class CliTestHelperTests
         IFileStore? resolved = null;
 
         var probe = new Command("probe");
-        probe.SetAction(_ => resolved = CommandExecutionContext.s_services.Value!.GetRequiredService<IFileStore>());
+        probe.SetActionWithExceptionHandling((services, _, _) =>
+        {
+            resolved = services.GetRequiredService<IFileStore>();
+            return Task.FromResult(ExitCodeConstants.Success);
+        });
 
         // Act
-        CliTestHelper.SetCommandExecutionContext(provider);
+        CliTestHelper.AttachCommandServices(provider, probe);
         await probe.Parse([]).InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert

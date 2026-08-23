@@ -23,7 +23,6 @@ public class UpdateCommandProgressTests
         // the in-place "\r\x1b[K{progress}" line. The fetch cancels and throws partway through, which
         // must still leave a cleared line - not a stale partial progress line - on the terminal.
         var services = CliTestHelper.CreateServiceProvider();
-        CliTestHelper.SetCommandExecutionContext(services);
         var globalLock = services.GetRequiredService<TestGlobalLockFile>();
         globalLock.OnRead = () =>
             new SkillLockFile
@@ -82,7 +81,6 @@ public class UpdateCommandProgressTests
         // Arrange: the normal happy path still ends with a cleared progress line (the finally runs
         // on the success path too), so the up-to-date summary is not preceded by stale progress text.
         var services = CliTestHelper.CreateServiceProvider();
-        CliTestHelper.SetCommandExecutionContext(services);
         var globalLock = services.GetRequiredService<TestGlobalLockFile>();
         globalLock.OnRead = () =>
             new SkillLockFile

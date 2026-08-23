@@ -72,7 +72,6 @@ public class ListCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
-        CliTestHelper.SetCommandExecutionContext(services);
         var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
         ConfigureInstaller(installer);
 
@@ -97,7 +96,6 @@ public class ListCommandTests : IDisposable
         CreateSkill(canonical, "beta");
 
         var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
-        CliTestHelper.SetCommandExecutionContext(services);
         var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
         ConfigureInstaller(installer);
 
@@ -123,7 +121,6 @@ public class ListCommandTests : IDisposable
         CreateSkill(canonical, "alpha");
 
         var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
-        CliTestHelper.SetCommandExecutionContext(services);
         var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
         ConfigureInstaller(installer);
 

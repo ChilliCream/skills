@@ -1,13 +1,14 @@
 using Skills.Interaction;
-using Skills.Options;
 
 namespace Skills.Extensions;
 
 /// <summary>
-/// Parses and invokes the Skills root command, wiring <see cref="CommandExecutionContext"/> so
-/// command actions can resolve services, and preserving the CLI's curated first-run experience
+/// Parses and invokes the Skills root command, preserving the CLI's curated first-run experience
 /// (the zero-args banner, the top-level curated help, and the logo shown before <c>add</c>/<c>init</c>)
-/// ahead of System.CommandLine's own parsing and invocation.
+/// ahead of System.CommandLine's own parsing and invocation. The root command itself already
+/// carries the services (see <c>SkillsRootCommand</c>'s constructor), so <c>services</c> here is
+/// only used directly for the banner and curated-help calls that happen before a command action
+/// ever runs.
 /// </summary>
 internal static class RootCommandExtensions
 {
@@ -18,8 +19,6 @@ internal static class RootCommandExtensions
         InvocationConfiguration? invocationConfiguration,
         CancellationToken cancellationToken)
     {
-        CommandExecutionContext.s_services.Value = new CommandServices(services);
-
         var strippedArgs = StripBareTerminators(args);
 
         if (strippedArgs.Length == 0)
@@ -43,16 +42,6 @@ internal static class RootCommandExtensions
         if (parseResult.Errors.Count > 0)
         {
             return await parseResult.InvokeAsync(invocationConfiguration, cancellationToken);
-        }
-
-        // Resolved once here, from whichever command declared the option, rather than each command
-        // pushing its own flag onto a shared context: commands that never emit JSON never need to
-        // know this option exists.
-        var format = parseResult.GetValue(Opt<OptionalOutputFormatOption>.Instance);
-        var jsonFlag = parseResult.GetValue(Opt<JsonOption>.Instance);
-        if (jsonFlag || format.EqualsOrdinalIgnoreCase("json"))
-        {
-            services.GetRequiredService<IInteractionService>().SetOutputFormat(OutputFormat.Json);
         }
 
         var commandName = parseResult.CommandResult.Command.Name;

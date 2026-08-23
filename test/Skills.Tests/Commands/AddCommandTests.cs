@@ -60,7 +60,6 @@ public class AddCommandTests : IDisposable
         Action<TestGlobalLockFile>? configureGlobalLock = null)
     {
         var services = CliTestHelper.CreateServiceProvider();
-        CliTestHelper.SetCommandExecutionContext(services);
 
         // The real LocalProvider guards on the source directory existing; register the workspace
         // so local-source installs proceed to the (faked) discovery step.
@@ -81,7 +80,6 @@ public class AddCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider();
-        CliTestHelper.SetCommandExecutionContext(services);
         var cmd = services.GetRequiredService<AddCommand>();
 
         // Act
@@ -458,7 +456,6 @@ public class AddCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider();
-        CliTestHelper.SetCommandExecutionContext(services);
 
         // Act
         var cmd = services.GetRequiredService<AddCommand>();
@@ -475,7 +472,6 @@ public class AddCommandTests : IDisposable
     {
         // Arrange
         var services = CliTestHelper.CreateServiceProvider();
-        CliTestHelper.SetCommandExecutionContext(services);
 
         // Act
         var cmd = services.GetRequiredService<AddCommand>();

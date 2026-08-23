@@ -276,8 +276,10 @@ since that id was not adopted the namespace is unaffected and remains
   sense for an executable.
 - `src/Skills.Tool` keeps shipping the `skills`/`skillz` tool packages and
   calls `RunAsync` where it now lives, referencing `Skills.Cli`.
-- `InternalsVisibleTo` from the library: `Skills.Tests`, `Skills.Cli`,
-  `Skills.Tool`.
+- `InternalsVisibleTo` from the library: `Skills.Tests`, and the assembly
+  name `skills` (`Skills.Cli`'s `AssemblyName`, not the project name). There
+  is no `Skills.Tool` grant; it only calls the public
+  `Skills.Cli.Program.RunAsync`.
 
 ## Non-goals
 

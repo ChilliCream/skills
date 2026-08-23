@@ -33,7 +33,13 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(AnsiConsole.Console);
         services.AddSingleton<ConsoleEnvironment>();
         services.AddSingleton(new CliExecutionContext { CommandName = toolCommandName });
-        services.AddSingleton<IInteractionService, ConsoleInteractionService>();
+
+        // A factory, not constructor injection: only one IAnsiConsole is registered above (bound
+        // to stdout), and ConsoleInteractionService needs a second, stderr-bound one for errors.
+        // Passing errorConsole explicitly here would just resolve the same stdout singleton twice.
+        // Leaving it out lets the service construct its own stderr console internally.
+        services.AddSingleton<IInteractionService>(
+            sp => new ConsoleInteractionService(sp.GetRequiredService<IAnsiConsole>()));
         services.AddSingleton<BannerService>();
 
         services.AddHttpClient(BlobClient.HttpClientName)

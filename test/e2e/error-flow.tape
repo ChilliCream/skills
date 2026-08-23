@@ -1,7 +1,7 @@
 # End-to-end recording of an error path: `skills add` on a missing local source.
 #
 # Validates the failure UX end to end — the logo, the resolved Source line, the
-# error message (written to stdout via the interaction service), and the non-zero
+# error message (written to stderr via the interaction service), and the non-zero
 # exit code (asserted by echoing $? into the recording). Hermetic: the path simply
 # does not exist. Produces error-flow.gif + error-flow.txt.
 

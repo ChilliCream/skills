@@ -6,9 +6,16 @@ using Spectre.Console.Rendering;
 
 namespace Skills.Interaction;
 
-internal sealed class ConsoleInteractionService(IAnsiConsole? console = null) : IInteractionService
+internal sealed class ConsoleInteractionService(IAnsiConsole? console = null, IAnsiConsole? errorConsole = null)
+    : IInteractionService
 {
     private readonly IAnsiConsole _console = console ?? AnsiConsole.Console;
+
+    // Errors render through a console bound to stderr, not the stdout one above, so scripts that
+    // separate the two streams (e.g. `skills add foo 2>errors.log`) still see errors even though
+    // everything else in human-readable mode writes to stdout.
+    private readonly IAnsiConsole _errorConsole = errorConsole
+        ?? AnsiConsole.Create(new AnsiConsoleSettings { Out = new AnsiConsoleOutput(Console.Error) });
 
     // The multi-select list prompts also accept Vim-style j/k for down/up. The single-select prompt
     // enables search (letters are query text there), so it keeps the plain console below.
@@ -75,7 +82,7 @@ internal sealed class ConsoleInteractionService(IAnsiConsole? console = null) : 
             return;
         }
 
-        _console.MarkupLineInterpolated($"[red]{message}[/]");
+        _errorConsole.MarkupLineInterpolated($"[red]{message}[/]");
     }
 
     public void WriteErrorPanel(string title, string message, string? tip = null)
@@ -101,8 +108,8 @@ internal sealed class ConsoleInteractionService(IAnsiConsole? console = null) : 
             content.Append($"[dim]{Markup.Escape(tip)}[/]");
         }
 
-        WriteLine();
-        _console.Write(
+        _errorConsole.WriteLine();
+        _errorConsole.Write(
             new Panel(new Markup(content.ToString()))
                 .Header($"[bold red]{Markup.Escape(title)}[/]")
                 .BorderColor(Color.Red)

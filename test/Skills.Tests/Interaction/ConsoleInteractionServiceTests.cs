@@ -85,6 +85,37 @@ public class ConsoleInteractionServiceTests
     }
 
     [Fact]
+    public void WriteError_Should_Write_To_ErrorConsole_Not_Stdout_Console_When_Human_Readable()
+    {
+        // Human-readable mode must keep the same stream separation as machine-readable mode: the
+        // error text goes to the stderr-bound console, never the stdout one, so scripts that split
+        // the two streams still see it.
+        using var console = new TestConsole();
+        using var errorConsole = new TestConsole();
+        var service = new ConsoleInteractionService(console, errorConsole);
+
+        service.WriteError("boom");
+
+        Assert.Equal("", console.Output);
+        Assert.Contains("boom", errorConsole.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WriteErrorPanel_Should_Write_To_ErrorConsole_Not_Stdout_Console_When_Human_Readable()
+    {
+        using var console = new TestConsole();
+        using var errorConsole = new TestConsole();
+        var service = new ConsoleInteractionService(console, errorConsole);
+
+        service.WriteErrorPanel("Title", "message", "tip");
+
+        Assert.Equal("", console.Output);
+        Assert.Contains("Title", errorConsole.Output, StringComparison.Ordinal);
+        Assert.Contains("message", errorConsole.Output, StringComparison.Ordinal);
+        Assert.Contains("tip", errorConsole.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void WriteRenderable_Should_Write_Nothing_When_Output_Format_Is_Json_And_Renderable_Is_Markup()
     {
         using var console = new TestConsole();

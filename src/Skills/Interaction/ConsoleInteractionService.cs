@@ -23,7 +23,7 @@ internal sealed class ConsoleInteractionService(IAnsiConsole? console = null) : 
 
     public bool IsHumanReadable => _outputFormat is null;
 
-    public void SetOutputFormat(OutputFormat format)
+    public void SetOutputFormat(OutputFormat? format)
     {
         _outputFormat = format;
     }

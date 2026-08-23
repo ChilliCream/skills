@@ -1,6 +1,7 @@
 using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Skills.Commands;
+using Skills.Install;
 using Skills.Interaction;
 using Skills.Tests.TestServices;
 using Skills.Tests.Utils;
@@ -82,6 +83,34 @@ public class SkillsCommandEmbeddingTests : IDisposable
             TryDelete(standaloneWorkspace);
             TryDelete(embeddedWorkspace);
         }
+    }
+
+    [Fact]
+    public async Task Json_Output_Format_Does_Not_Stick_Across_Invocations_On_A_Shared_Provider()
+    {
+        // Arrange: one provider, one root command - exactly what an embedding host reuses across
+        // repeated invocations, since IInteractionService is registered as a singleton.
+        var ct = TestContext.Current.CancellationToken;
+        var services = CliTestHelper.CreateServiceProvider();
+        var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
+        installer.OnGetCanonicalSkillsDir = (_, cwd) => Path.Combine(cwd ?? "/workspace", ".agents", "skills");
+        installer.OnGetAgentBaseDir = (agentType, _, cwd) => Path.Combine(cwd ?? "/workspace", ".agents", "skills");
+        var interaction = (TestInteractionService)services.GetRequiredService<IInteractionService>();
+        var root = services.GetRequiredService<SkillsRootCommand>();
+
+        // Act: a --json invocation first, then a bare one on the same provider.
+        var jsonExitCode = await root.Parse(["list", "--json"]).InvokeAsync(cancellationToken: ct);
+        var jsonModeDuringFirstRun = !interaction.IsHumanReadable;
+
+        var plainExitCode = await root.Parse(["list"]).InvokeAsync(cancellationToken: ct);
+
+        // Assert: the first run rendered machine-readable, but it must not leak into the second -
+        // the second renders human output rather than staying stuck in JSON mode.
+        Assert.Equal(0, jsonExitCode);
+        Assert.True(jsonModeDuringFirstRun);
+        Assert.Equal(0, plainExitCode);
+        Assert.True(interaction.IsHumanReadable);
+        Assert.Contains("No project skills found.", interaction.Output);
     }
 
     [Fact]

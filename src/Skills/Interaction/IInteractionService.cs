@@ -17,10 +17,12 @@ internal interface IInteractionService
     bool IsHumanReadable { get; }
 
     /// <summary>
-    /// Switches the run to a machine-readable output format. Idempotent: once set, later calls
-    /// with the same or a different format cannot switch the run back to human-readable.
+    /// Sets the run's output format: a machine-readable format, or <see langword="null"/> for
+    /// human-readable. Callers resolve this from the current invocation's own parse result on
+    /// every command, not just once, so a format set for one invocation of a shared, long-lived
+    /// service instance never leaks into the next.
     /// </summary>
-    void SetOutputFormat(OutputFormat format);
+    void SetOutputFormat(OutputFormat? format);
 
     void WriteLine(string text = "");
 

@@ -27,13 +27,13 @@ internal static class CommandExtensions
 
             // Resolved here rather than in RootCommandExtensions.ExecuteAsync (which a host
             // pipeline never runs) so the --json/--format json switch behaves identically whether
-            // the command runs standalone or embedded.
+            // the command runs standalone or embedded. Set unconditionally on every invocation
+            // (Json when flagged, null otherwise) rather than only when flagged: interaction is a
+            // singleton in an embedding host, so a prior invocation's Json mode must not leak into
+            // one that did not ask for it.
             var format = parseResult.GetValue(Opt<OptionalOutputFormatOption>.Instance);
             var jsonFlag = parseResult.GetValue(Opt<JsonOption>.Instance);
-            if (jsonFlag || format.EqualsOrdinalIgnoreCase("json"))
-            {
-                interaction.SetOutputFormat(OutputFormat.Json);
-            }
+            interaction.SetOutputFormat(jsonFlag || format.EqualsOrdinalIgnoreCase("json") ? OutputFormat.Json : null);
 
             try
             {

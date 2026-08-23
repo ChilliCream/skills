@@ -107,6 +107,20 @@ public class ConsoleInteractionServiceTests
     }
 
     [Fact]
+    public void IsHumanReadable_Should_Be_True_Again_After_SetOutputFormat_Is_Called_With_Null()
+    {
+        // A shared, long-lived service instance (an embedding host reuses one across invocations)
+        // must be resettable back to human-readable rather than staying stuck once JSON is set.
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+        service.SetOutputFormat(OutputFormat.Json);
+
+        service.SetOutputFormat(null);
+
+        Assert.True(service.IsHumanReadable);
+    }
+
+    [Fact]
     public void WriteMarkupLine_Should_Write_When_Output_Format_Is_Unset()
     {
         using var console = new TestConsole();

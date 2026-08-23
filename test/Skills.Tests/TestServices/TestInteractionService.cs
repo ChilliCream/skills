@@ -44,7 +44,7 @@ internal sealed class TestInteractionService : IInteractionService
 
     public bool IsHumanReadable => _outputFormat is null;
 
-    public void SetOutputFormat(OutputFormat format)
+    public void SetOutputFormat(OutputFormat? format)
     {
         _outputFormat = format;
     }

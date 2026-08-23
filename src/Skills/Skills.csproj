@@ -13,7 +13,7 @@
     <!-- Turns on the trim, single-file and AOT analyzers at build time for every target
          framework above, so an incompatible pattern fails dotnet build here (an IL2xxx/IL3xxx
          build error, since TreatWarningsAsErrors is set) rather than surfacing only when a
-         consumer publishes AOT. Proven from a consumer's perspective by test/Skills.AotConsumer. -->
+         consumer publishes AOT. Proven from a consumer's perspective by samples/EmbeddedHost. -->
     <IsAotCompatible>true</IsAotCompatible>
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>

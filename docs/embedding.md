@@ -75,6 +75,51 @@ host that only materializes its container during invocation composes the
 overload would be a compatible additive change if a real host needs it; it is
 deliberately not part of v1.
 
+The snippet above is not prose only: `samples/EmbeddedHost` is a runnable
+project that composes it, with a command of its own next to `SkillsCommand`
+so the wiring is end to end rather than a skills-only root. It also
+publishes AOT in CI, so it is the consumer-side proof that referencing the
+library and publishing AOT stays warning-free (formerly
+`test/Skills.AotConsumer`, moved here in skillz-rn6.7 so the one project
+serves both purposes). See the README for how to run it.
+
+## Nitro integration note
+
+This is the specific shape a `graphql-platform` maintainer would add, not a
+general pattern; see "Host snippet" above for the general one.
+
+`NitroRootCommand` already composes its subcommands the same way `SkillsCommand`
+expects to be composed:
+
+```csharp
+public sealed class NitroRootCommand : RootCommand
+{
+    public NitroRootCommand(IServiceProvider services) : base("Nitro CLI")
+    {
+        Subcommands.Add(new ApiCommand());
+        Subcommands.Add(new AgentCommand());
+        Subcommands.Add(new SkillsCommand(services));
+    }
+}
+```
+
+Service registration: call `services.AddSkillsServices(toolCommandName: "nitro skills")`
+on the same `IServiceCollection` that `AddNitroServices()` populates, either
+before or after that call, then build the provider once. Order does not
+matter here because the two registration sets do not share a service type
+and both use plain `Add*`.
+
+Friction point to flag for whoever does this: Nitro resolves its own
+services through its own `internal` `CommandExecutionContext` `AsyncLocal`,
+which is a different type in a different assembly from anything in this
+package (this package deleted its equivalent `AsyncLocal` per Decision 2
+below). Skills commands never read Nitro's ambient context and there is
+nothing to populate on Nitro's side; the only thing the host must do is pass
+the `IServiceProvider` it built into `new SkillsCommand(services)` at
+composition time, as shown above. It is easy to assume services flow
+through the ambient context the way the rest of a Nitro command tree does;
+here they explicitly do not.
+
 ## Decision 1: what a host adds to its root command (RULED)
 
 Ruling: adopt the proposed shape.

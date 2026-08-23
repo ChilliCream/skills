@@ -148,6 +148,10 @@ internal sealed class TestInteractionService : IInteractionService
     {
         if (!IsHumanReadable)
         {
+            // Mirrors ConsoleInteractionService's machine-mode behavior: plain text to stderr, not
+            // the decorated markup used in human-readable mode, so command-level tests can pin the
+            // --json error surfacing the same way they pin stdout.
+            Console.Error.WriteLine(message);
             return;
         }
 
@@ -159,6 +163,13 @@ internal sealed class TestInteractionService : IInteractionService
     {
         if (!IsHumanReadable)
         {
+            Console.Error.WriteLine(title);
+            Console.Error.WriteLine(message);
+            if (tip is not null)
+            {
+                Console.Error.WriteLine(tip);
+            }
+
             return;
         }
 

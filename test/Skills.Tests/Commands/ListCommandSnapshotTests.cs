@@ -191,6 +191,29 @@ public class ListCommandSnapshotTests : IDisposable
     }
 
     [Fact]
+    public async Task List_With_Invalid_Agent_Fails_As_Json()
+    {
+        // Arrange
+        var services = BuildServices();
+
+        // Act
+        var output = await CommandSnapshot.RunAsync(services, "list", "--agent", "bogus", "--json");
+
+        // Assert: machine mode drops the decorated panel and reports the failure as plain text on
+        // stderr instead, so a script parsing --json output still sees why the command failed.
+        output.MatchInlineSnapshot(
+            """
+            $ skills list --agent bogus --json
+            # exit 1
+
+            [stderr]
+            Invalid agents
+            Invalid agents: bogus
+            Valid agents: adal, aider-desk, amp, antigravity, augment, bob, claude-code, cline, codearts-agent, codebuddy, codemaker, codestudio, codex, command-code, continue, cortex, crush, cursor, deepagents, devin, dexto, droid, firebender, forgecode, gemini-cli, github-copilot, goose, hermes-agent, iflow-cli, junie, kilo, kimi-cli, kiro-cli, kode, mcpjam, mistral-vibe, mux, neovate, openclaw, opencode, openhands, pi, pochi, qoder, qwen-code, replit, roo, rovodev, tabnine-cli, trae, trae-cn, universal, warp, windsurf, zencoder
+            """);
+    }
+
+    [Fact]
     public async Task List_Global_With_No_Skills()
     {
         // Arrange

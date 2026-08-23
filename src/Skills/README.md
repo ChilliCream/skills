@@ -19,6 +19,8 @@ dotnet add package Skills.Library
 ## Usage
 
 ```csharp
+using System.CommandLine;
+using Microsoft.Extensions.DependencyInjection;
 using Skills.Commands;
 using Skills.Extensions;
 

@@ -751,6 +751,29 @@ public class AddCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task RunAsync_Should_ReportUnexpectedErrorPrefix_When_ExecutorThrowsUnhandledException()
+    {
+        // Arrange
+        var services = BuildServices(
+            configureParser: p => p.OnParse = _ => throw new InvalidOperationException("source parsing exploded"));
+
+        // Act
+        var cmd = services.GetRequiredService<AddCommand>();
+        var parseResult = cmd.Parse(["./local-path", "--yes", "--agent", "claude-code"]);
+        var exitCode = await parseResult.InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert: an unexpected exception escaping the executor is caught by the shared
+        // SetActionWithExceptionHandling ladder, not by a local catch in the executor.
+        var interaction = services.GetRequiredService<TestInteractionService>();
+        Assert.Equal(ExitCodeConstants.Failure, exitCode);
+        Assert.Contains(
+            interaction.Output,
+            line =>
+                line.Contains("There was an unexpected error:", StringComparison.Ordinal)
+                && line.Contains("source parsing exploded", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task RunAsync_Should_PropagateCancellation_When_InstallerThrowsOperationCanceled()
     {
         // Arrange

@@ -24,33 +24,10 @@ internal sealed class AddCommandExecutor(
     IFileStore fileStore,
     ConsoleEnvironment consoleEnvironment)
 {
+    // Any exception thrown here (CliException, ExitException, or an unexpected one) is left to
+    // unwind to the caller's SetActionWithExceptionHandling ladder, which owns presentation for
+    // every command uniformly; this executor no longer catches anything itself.
     public async Task<int> RunAsync(AddCommandOptions options, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await RunCoreAsync(options, cancellationToken);
-        }
-        catch (CliException ex)
-        {
-            if (ex.Title is { } title)
-            {
-                interaction.WriteErrorPanel(title, ex.Message, ex.Hint);
-            }
-            else
-            {
-                interaction.WriteError(ex.Message);
-            }
-
-            return ex.ExitCode;
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            interaction.WriteError(ex.Message);
-            return ExitCodeConstants.Failure;
-        }
-    }
-
-    private async Task<int> RunCoreAsync(AddCommandOptions options, CancellationToken cancellationToken)
     {
         // Resolve the source argument (owner/repo, URL, or local path) into a typed source.
         var parsed = sourceParser.Parse(options.Source!);

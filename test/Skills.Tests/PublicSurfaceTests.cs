@@ -38,10 +38,10 @@ public class PublicSurfaceTests
         // the surface anywhere in Skills (a stray "public" on an unrelated type) must show up here.
         string.Join("\n", lines).MatchInlineSnapshot(
             """
-            public sealed class Skills.Commands.SkillsCommand
-                public SkillsCommand(IServiceProvider serviceProvider)
+            public sealed class Skills.Commands.SkillsCommand : System.CommandLine.Command, Skills.ICommandServicesSource
+                public SkillsCommand(System.IServiceProvider serviceProvider)
             public static class Skills.Extensions.ServiceCollectionExtensions
-                public static IServiceCollection AddSkillsServices(IServiceCollection services, string toolCommandName)
+                public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddSkillsServices(Microsoft.Extensions.DependencyInjection.IServiceCollection services, string toolCommandName)
             """);
     }
 
@@ -58,7 +58,27 @@ public class PublicSurfaceTests
             _ => "class",
         };
 
-        return $"public {kind} {type.FullName}";
+        // A base type or an implemented interface is as much a contract as a member: swapping
+        // SkillsCommand's base class, or dropping an interface it implements, changes what an
+        // embedding host can do with the type without touching a single member signature.
+        var contracts = new List<string>();
+        var baseType = type.BaseType;
+        if (baseType is not null && baseType != typeof(object) && baseType != typeof(ValueType) && baseType != typeof(Enum))
+        {
+            contracts.Add(TypeName(baseType));
+        }
+
+        // GetInterfaces() flattens the whole hierarchy, so subtract what the base type already
+        // brings in to keep this line to the interfaces the type itself declares.
+        var inherited = baseType?.GetInterfaces() ?? Type.EmptyTypes;
+        contracts.AddRange(
+            type.GetInterfaces()
+                .Except(inherited)
+                .Select(TypeName)
+                .OrderBy(name => name, StringComparer.Ordinal));
+
+        var suffix = contracts.Count > 0 ? " : " + string.Join(", ", contracts) : string.Empty;
+        return $"public {kind} {type.FullName}{suffix}";
     }
 
     private static IEnumerable<string> DescribeMembers(Type type)
@@ -71,8 +91,11 @@ public class PublicSurfaceTests
             yield return $"public {type.Name}({Parameters(ctor)})";
         }
 
+        // IsSpecialName also marks operator overloads (op_Addition, op_Implicit, ...), not just
+        // the compiler-generated property/event accessors this filter exists to drop. Keeping the
+        // "op_" ones back in is what makes a public operator or conversion show up in the lock.
         foreach (var method in type.GetMethods(flags)
-            .Where(m => !m.IsSpecialName)
+            .Where(m => !m.IsSpecialName || m.Name.StartsWith("op_", StringComparison.Ordinal))
             .OrderBy(m => m.Name, StringComparer.Ordinal)
             .ThenBy(m => Parameters(m), StringComparer.Ordinal))
         {
@@ -82,7 +105,10 @@ public class PublicSurfaceTests
 
         foreach (var property in type.GetProperties(flags).OrderBy(p => p.Name, StringComparer.Ordinal))
         {
-            var accessors = (property.CanRead ? "get; " : string.Empty) + (property.CanWrite ? "set; " : string.Empty);
+            // GetProperties(Public) returns the property if either accessor is public, so
+            // CanRead/CanWrite alone can't tell "public get; internal set;" from "get; set;".
+            // Render each accessor's own visibility instead of assuming it matches the property's.
+            var accessors = DescribeAccessor(property.GetMethod, "get") + DescribeAccessor(property.SetMethod, "set");
             yield return $"public {TypeName(property.PropertyType)} {property.Name} {{ {accessors}}}";
         }
 
@@ -90,27 +116,65 @@ public class PublicSurfaceTests
         {
             yield return $"public {TypeName(field.FieldType)} {field.Name}";
         }
+
+        foreach (var evt in type.GetEvents(flags).OrderBy(e => e.Name, StringComparer.Ordinal))
+        {
+            yield return $"public event {TypeName(evt.EventHandlerType!)} {evt.Name}";
+        }
     }
+
+    private static string DescribeAccessor(MethodInfo? accessor, string keyword)
+    {
+        if (accessor is null)
+        {
+            return string.Empty;
+        }
+
+        return $"{AccessorVisibility(accessor)}{keyword}; ";
+    }
+
+    private static string AccessorVisibility(MethodInfo accessor) => accessor switch
+    {
+        { IsPublic: true } => string.Empty,
+        { IsFamilyOrAssembly: true } => "protected internal ",
+        { IsFamily: true } => "protected ",
+        { IsAssembly: true } => "internal ",
+        { IsFamilyAndAssembly: true } => "private protected ",
+        _ => "private ",
+    };
 
     private static string Parameters(MethodBase method) =>
         string.Join(", ", method.GetParameters().Select(p => $"{TypeName(p.ParameterType)} {p.Name}"));
 
     private static string TypeName(Type type)
     {
-        if (!type.IsGenericType)
+        // Generic method/type parameters (T, TOption, ...) have no Namespace/FullName worth
+        // qualifying; they are placeholders, not real types.
+        if (type.IsGenericParameter)
         {
-            return type.Name switch
-            {
-                "Void" => "void",
-                "String" => "string",
-                "Boolean" => "bool",
-                "Int32" => "int",
-                _ => type.Name,
-            };
+            return type.Name;
         }
 
-        var name = type.Name[..type.Name.IndexOf('`')];
-        var arguments = string.Join(", ", type.GetGenericArguments().Select(TypeName));
-        return $"{name}<{arguments}>";
+        if (type.IsGenericType)
+        {
+            var genericName = QualifiedName(type.Name[..type.Name.IndexOf('`')], type);
+            var arguments = string.Join(", ", type.GetGenericArguments().Select(TypeName));
+            return $"{genericName}<{arguments}>";
+        }
+
+        return type.Name switch
+        {
+            "Void" => "void",
+            "String" => "string",
+            "Boolean" => "bool",
+            "Int32" => "int",
+            _ => QualifiedName(type.Name, type),
+        };
     }
+
+    // Type.Name alone collapses namespaces: two types that share a short name in different
+    // namespaces would render identically, and a type moved to a new namespace would not show
+    // up as a change. Prefixing with Namespace keeps that identity visible in the snapshot.
+    private static string QualifiedName(string name, Type type) =>
+        type.Namespace is null ? name : $"{type.Namespace}.{name}";
 }

@@ -1,9 +1,7 @@
 # CLI layer conventions
 
-`src/Skills/Commands/` follows the System.CommandLine shape from Nitro
-(`src/Nitro/CommandLine/src/CommandLine` in ChilliCream/graphql-platform). Diff
-against that repo when in doubt; this file is the local summary, not a
-substitute.
+`src/Skills/Commands/` follows the System.CommandLine conventions summarized
+below.
 
 - **Command class**: `internal sealed class {Verb}Command : Command`, a
   parameterless constructor. Constructor order: base(name, description),

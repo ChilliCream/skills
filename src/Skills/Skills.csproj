@@ -3,17 +3,7 @@
     <OutputType>Library</OutputType>
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <RootNamespace>Skills</RootNamespace>
-    <!-- The CLR resolves weak-named assembly references case-insensitively, and the standalone
-         executable's own assembly name is "skills" (src/Skills.Cli, fixed by the release asset
-         names). Left at the default ("Skills", from the project file name), that self-loaded
-         entry assembly would shadow this library at runtime for every "Skills" reference. An
-         explicit, non-colliding name sidesteps it; the namespace and public surface are
-         unaffected. Matches the package id below. -->
     <AssemblyName>Skills.Library</AssemblyName>
-    <!-- Turns on the trim, single-file and AOT analyzers at build time for every target
-         framework above, so an incompatible pattern fails dotnet build here (an IL2xxx/IL3xxx
-         build error, since TreatWarningsAsErrors is set) rather than surfacing only when a
-         consumer publishes AOT. -->
     <IsAotCompatible>true</IsAotCompatible>
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
@@ -31,8 +21,6 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Skills.Tests" />
-    <!-- The Skills.Cli project sets AssemblyName=skills (the release binary name), so the
-         InternalsVisibleTo target is the assembly name "skills", not the project name. -->
     <InternalsVisibleTo Include="skills" />
   </ItemGroup>
   <ItemGroup>

@@ -3,12 +3,7 @@ using Skills.Interaction;
 namespace Skills.Extensions;
 
 /// <summary>
-/// Parses and invokes the Skills root command, preserving the CLI's curated first-run experience
-/// (the zero-args banner, the top-level curated help, and the logo shown before <c>add</c>/<c>init</c>)
-/// ahead of System.CommandLine's own parsing and invocation. The root command itself already
-/// carries the services (see <c>SkillsRootCommand</c>'s constructor), so <c>services</c> here is
-/// only used directly for the banner and curated-help calls that happen before a command action
-/// ever runs.
+/// Provides helpers for running the Skills root command.
 /// </summary>
 internal static class RootCommandExtensions
 {
@@ -28,7 +23,7 @@ internal static class RootCommandExtensions
             return ExitCodeConstants.Success;
         }
 
-        // Curated root help: short-circuit when user asks for top-level help only
+        // Show curated help for the root command.
         if (strippedArgs.Length == 1 && strippedArgs[0] is "--help" or "-h" or "-?")
         {
             var banner = services.GetRequiredService<BannerService>();
@@ -54,7 +49,6 @@ internal static class RootCommandExtensions
         return await parseResult.InvokeAsync(invocationConfiguration, cancellationToken);
     }
 
-    // Strips bare `--` tokens. The CLI has no pass-through commands, so the argument terminator
-    // is meaningless here and would only confuse System.CommandLine's parsing.
+    // The CLI has no pass-through commands, so bare terminators can be ignored.
     internal static string[] StripBareTerminators(IReadOnlyList<string> args) => args.Where(a => a != "--").ToArray();
 }

@@ -61,6 +61,42 @@ public class RemoveCommandSnapshotTests : IDisposable
     }
 
     [Fact]
+    public async Task Remove_Help_Shows_Examples()
+    {
+        // Arrange
+        var services = BuildServices();
+
+        // Act
+        var output = await CommandSnapshot.RunAsync(services, "remove", "--help");
+
+        // Assert
+        output.MatchInlineSnapshot(
+            """
+            $ skills remove --help
+
+            Description:
+              Remove installed skills
+
+            Usage:
+              Skills.Tests remove [<skills>...] [options]
+
+            Arguments:
+              <skills>  Skill names to remove
+
+            Options:
+              -g, --global         Remove from global installation
+              -a, --agent <agent>  Target agent(s)
+              -y, --yes            Skip prompts (non-interactive)
+              --all                Remove all installed skills
+              -?, -h, --help       Show help and usage information
+
+            Example:
+              skills remove my-skill --yes
+              skills remove --all --yes
+            """);
+    }
+
+    [Fact]
     public async Task Remove_With_No_Skills()
     {
         // Arrange

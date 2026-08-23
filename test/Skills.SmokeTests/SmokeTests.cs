@@ -36,6 +36,7 @@ public class SmokeTests
         Assert.Contains("add", result.StandardOutput);
         Assert.Contains("remove", result.StandardOutput);
         Assert.Contains("list", result.StandardOutput);
+        Assert.Contains("update", result.StandardOutput);
         Assert.Contains("init", result.StandardOutput);
     }
 

@@ -64,6 +64,38 @@ public class InitCommandSnapshotTests : IDisposable
     }
 
     [Fact]
+    public async Task Init_Help_Shows_Examples()
+    {
+        // Arrange
+        var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+
+        // Act
+        var output = await CommandSnapshot.RunAsync(services, "init", "--help");
+
+        // Assert
+        output.MatchInlineSnapshot(
+            """
+            $ skills init --help
+
+            Description:
+              Initialize a new skill (creates SKILL.md)
+
+            Usage:
+              Skills.Tests init [<name>] [options]
+
+            Arguments:
+              <name>  Skill name (creates <name>/SKILL.md). Defaults to current directory.
+
+            Options:
+              -?, -h, --help  Show help and usage information
+
+            Example:
+              skills init
+              skills init my-skill
+            """);
+    }
+
+    [Fact]
     public async Task Init_When_Skill_Already_Exists_Warns()
     {
         // Arrange

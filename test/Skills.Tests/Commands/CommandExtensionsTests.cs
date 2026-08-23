@@ -73,6 +73,27 @@ public class CommandExtensionsTests
     }
 
     [Fact]
+    public async Task CliException_Without_Title_Writes_Message_Only_And_Drops_Hint()
+    {
+        // A title-less CliException goes through WriteError, which has no hint parameter - so a
+        // hint set alongside a null title is dropped rather than rendered anywhere. Every current
+        // call site that sets a hint also sets a title, so this is a latent, not live, gap; pinned
+        // here so a future title-less exception with a hint gets a deliberate decision instead of
+        // silently losing it.
+        var ct = TestContext.Current.CancellationToken;
+        var (command, interaction) = CreateCommand(() => throw new CliException(
+            7,
+            "something went wrong",
+            hint: "try again"));
+
+        var exitCode = await InvokeAsync(command, ct);
+
+        Assert.Equal(7, exitCode);
+        Assert.Contains("ERROR: something went wrong", interaction.Output);
+        Assert.DoesNotContain(interaction.Output, line => line.Contains("try again", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task OperationCanceledException_Returns_Cancelled_ExitCode()
     {
         var ct = TestContext.Current.CancellationToken;

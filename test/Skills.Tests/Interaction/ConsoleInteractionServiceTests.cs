@@ -116,6 +116,32 @@ public class ConsoleInteractionServiceTests
     }
 
     [Fact]
+    public void WriteErrorPanel_Should_Write_Plain_Text_To_Stderr_When_Output_Format_Is_Json()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+        service.SetOutputFormat(OutputFormat.Json);
+
+        var originalError = Console.Error;
+        var stderr = new StringWriter();
+        Console.SetError(stderr);
+        try
+        {
+            service.WriteErrorPanel("Title", "message", "tip");
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
+
+        Assert.Equal("", console.Output);
+        var text = stderr.ToString();
+        Assert.Contains("Title", text, StringComparison.Ordinal);
+        Assert.Contains("message", text, StringComparison.Ordinal);
+        Assert.Contains("tip", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void WriteRenderable_Should_Write_Nothing_When_Output_Format_Is_Json_And_Renderable_Is_Markup()
     {
         using var console = new TestConsole();

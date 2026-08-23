@@ -54,6 +54,9 @@ internal static class CommandExtensions
                 }
                 else if (!string.IsNullOrEmpty(exception.Message))
                 {
+                    // WriteError has no hint parameter, so a hint on a title-less exception is
+                    // dropped here rather than rendered. Every current call site that sets a hint
+                    // also sets a title, so this arm never sees one in practice.
                     interaction.WriteError(exception.Message);
                 }
 

@@ -302,6 +302,35 @@ public class AddCommandSnapshotTests : IDisposable
     }
 
     [Fact]
+    public async Task Add_Fetch_Failure_Shows_Titled_Panel_With_Hint()
+    {
+        // Arrange: a non-CliException thrown inside the provider's FetchSkillsAsync (here, skill
+        // discovery) is reframed by AddCommandExecutor.FetchSkillsAsync into a titled CliException
+        // with a hint, rendered through WriteErrorPanel.
+        var services = BuildServices(
+            configureParser: p => p.OnParse = _ => LocalSource(),
+            configureDiscovery: d => d.OnDiscover = (_, _, _) => throw new InvalidOperationException("disk exploded"));
+
+        // Act
+        var output = await CommandSnapshot.RunAsync(services, "add", "./local-path", "--yes", "--agent", "claude-code");
+
+        // Assert
+        output.MatchInlineSnapshot(
+            """
+            $ skills add ./local-path --yes --agent claude-code
+            # exit 1
+
+            Source: /skills-test/local
+
+            ┌─Failed to fetch skills───────────────────────────────────────────────────────┐
+            │ disk exploded                                                                │
+            │                                                                              │
+            │ Tip: use the --yes (-y) and --global (-g) flags to install without prompts.  │
+            └──────────────────────────────────────────────────────────────────────────────┘
+            """);
+    }
+
+    [Fact]
     public async Task Add_Install_Failure_Shows_Failure_Panel()
     {
         // Arrange

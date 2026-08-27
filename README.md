@@ -35,7 +35,8 @@ NuGet.
 
 ```
 src/
-  Skills/           Main CLI assembly (AOT-publishable binary)
+  Skills/           Command implementations and services
+  Skills.Cli/       AOT-publishable `skills` binary
   Skills.Tool/      `dotnet tool` wrapper for the `skills` NuGet package
 test/
   Skills.Tests/     Unit tests
@@ -44,11 +45,10 @@ Skills.sln          Solution
 global.json         .NET SDK pin
 ```
 
-`Skills.Tool` is a thin wrapper that calls into `Skills.Program.Main`. It exists
-so `dotnet tool install -g skills` exposes the `skills` command while `Skills`
-itself can also be AOT-published as a standalone binary for the supported runtime
-identifiers (`linux-x64`, `linux-arm64`, `linux-musl-x64`, `osx-x64`, `osx-arm64`,
-`win-x64`, `win-arm64`).
+`Skills.Tool` is a thin wrapper that exists so `dotnet tool install -g skills`
+exposes the `skills` command, while `Skills.Cli` is AOT-published as a standalone
+binary for the supported runtime identifiers (`linux-x64`, `linux-arm64`,
+`linux-musl-x64`, `osx-x64`, `osx-arm64`, `win-x64`, `win-arm64`).
 
 ## Build
 
@@ -67,17 +67,17 @@ dotnet test
 ## Run locally
 
 ```bash
-dotnet run --project src/Skills -- add anthropics/skills
+dotnet run --project src/Skills.Cli -- add anthropics/skills
 ```
 
 ## Publish AOT
 
 ```bash
-dotnet publish src/Skills -c Release -r linux-x64
+dotnet publish src/Skills.Cli -c Release -r linux-x64
 ```
 
 Produces a single self-contained `skills` binary at
-`src/Skills/bin/Release/<tfm>/linux-x64/publish/skills`.
+`src/Skills.Cli/bin/Release/<tfm>/linux-x64/publish/skills`.
 
 ## Pack the tool
 

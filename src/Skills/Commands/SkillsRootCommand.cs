@@ -1,20 +1,16 @@
-using System.CommandLine;
-
 namespace Skills.Commands;
 
+/// <summary>
+/// The standalone <c>skills</c> executable's root command. Composes the same five subcommands as
+/// <see cref="SkillsCommand"/>, via the shared <see cref="SkillsSubcommands"/> helper, so the two
+/// entry points never drift apart.
+/// </summary>
 internal sealed class SkillsRootCommand : RootCommand
 {
-    public SkillsRootCommand(
-        AddCommand add,
-        RemoveCommand remove,
-        ListCommand list,
-        InitCommand init,
-        UpdateCommand update) : base("Skills - AI agent skill manager")
+    public SkillsRootCommand() : base("Skills - AI agent skill manager")
     {
-        Subcommands.Add(add);
-        Subcommands.Add(remove);
-        Subcommands.Add(list);
-        Subcommands.Add(init);
-        Subcommands.Add(update);
+        SkillsSubcommands.AddTo(this);
+
+        CommandExamples.Install(this);
     }
 }

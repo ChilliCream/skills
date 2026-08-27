@@ -1,3 +1,4 @@
+using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Skills.Commands;
 using Skills.Git;
@@ -95,6 +96,7 @@ internal static class CliTestHelper
         services.AddSingleton<ProviderRegistry>();
 
         services.AddTransient<AddCommandExecutor>();
+
         services.AddTransient<AddCommand>();
         services.AddTransient<RemoveCommand>();
         services.AddTransient<ListCommand>();
@@ -109,7 +111,9 @@ internal static class CliTestHelper
 
         configure?.Invoke(services);
 
-        return services.BuildServiceProvider();
+        var provider = services.BuildServiceProvider();
+        CommandExecutionContext.s_services.Value = new CommandServices(provider);
+        return provider;
     }
 }
 

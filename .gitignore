@@ -5,3 +5,4 @@ obj/
 artifacts/
 .work/
 .DS_Store
+.nitro/agents/

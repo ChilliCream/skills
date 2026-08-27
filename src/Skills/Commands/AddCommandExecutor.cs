@@ -8,7 +8,6 @@ using Skills.Skills;
 using Skills.Sources;
 using Skills.Sources.Providers;
 using Skills.Utils;
-using Spectre.Console;
 
 namespace Skills.Commands;
 
@@ -25,33 +24,10 @@ internal sealed class AddCommandExecutor(
     IFileStore fileStore,
     ConsoleEnvironment consoleEnvironment)
 {
-    public async Task<CommandResult> RunAsync(AddCommandOptions options, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await RunCoreAsync(options, cancellationToken);
-        }
-        catch (CliException ex)
-        {
-            if (ex.Title is { } title)
-            {
-                interaction.WriteErrorPanel(title, ex.Message, ex.Hint);
-            }
-            else
-            {
-                interaction.WriteError(ex.Message);
-            }
-
-            return new CommandResult.Failure(ex.ExitCode);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            interaction.WriteError(ex.Message);
-            return new CommandResult.Failure(ExitCodeConstants.Failure);
-        }
-    }
-
-    private async Task<CommandResult> RunCoreAsync(AddCommandOptions options, CancellationToken cancellationToken)
+    // Any exception thrown here (CliException, ExitException, or an unexpected one) is left to
+    // unwind to the caller's SetActionWithExceptionHandling ladder, which owns presentation for
+    // every command uniformly.
+    public async Task<int> RunAsync(AddCommandOptions options, CancellationToken cancellationToken)
     {
         // Resolve the source argument (owner/repo, URL, or local path) into a typed source.
         var parsed = sourceParser.Parse(options.Source!);
@@ -98,7 +74,7 @@ internal sealed class AddCommandExecutor(
             if (options.List)
             {
                 RenderListSkills(skills.ApplyFilters(skillFilters));
-                return new CommandResult.Success();
+                return ExitCodeConstants.Success;
             }
 
             return await RunInstallationAsync(parsed, skills, skillFilters, options, cancellationToken);
@@ -137,7 +113,7 @@ internal sealed class AddCommandExecutor(
         }
     }
 
-    private async Task<CommandResult> RunInstallationAsync(
+    private async Task<int> RunInstallationAsync(
         SkillSource parsed,
         ImmutableArray<ResolvedSkill> skills,
         ImmutableArray<string> skillFilters,
@@ -155,10 +131,10 @@ internal sealed class AddCommandExecutor(
                 {
                     interaction.WriteLine($"  {s.InstallName}");
                 }
-                return new CommandResult.Failure(ExitCodeConstants.Failure);
+                return ExitCodeConstants.Failure;
             }
             interaction.WriteWarning("Installation cancelled");
-            return new CommandResult.Cancelled();
+            return ExitCodeConstants.Cancelled;
         }
 
         var nonInteractive = options.Yes || options.All || consoleEnvironment.IsInputRedirected;
@@ -166,7 +142,7 @@ internal sealed class AddCommandExecutor(
         var selectedAgents = await SelectAgentsAsync(options, nonInteractive, cancellationToken);
         if (selectedAgents is not { } targetAgents)
         {
-            return new CommandResult.Cancelled();
+            return ExitCodeConstants.Cancelled;
         }
 
         if (targetAgents.Length == 0)
@@ -214,7 +190,7 @@ internal sealed class AddCommandExecutor(
             if (!confirmed)
             {
                 interaction.WriteWarning("Installation cancelled");
-                return new CommandResult.Cancelled();
+                return ExitCodeConstants.Cancelled;
             }
         }
 
@@ -241,7 +217,7 @@ internal sealed class AddCommandExecutor(
 
         RenderInstallationReport(targetAgents, successful, failed, existingSkills, installGlobally, installMode);
 
-        return failed.Length > 0 ? new CommandResult.Failure(ExitCodeConstants.Failure) : new CommandResult.Success();
+        return failed.Length > 0 ? ExitCodeConstants.Failure : ExitCodeConstants.Success;
     }
 
     private void RenderInstallationReport(
@@ -451,18 +427,7 @@ internal sealed class AddCommandExecutor(
                 return validAgents;
             }
 
-            var invalid = options.Agents.Where(a => !validAgents.Contains(a)).ToList();
-            if (invalid.Count > 0)
-            {
-                // Sort the advisory list so the hint is deterministic and easy to scan; the
-                // registry's own order is hash-bucket order and not meaningful to the user.
-                var sortedValid = validAgents.OrderBy(a => a, StringComparer.Ordinal);
-                throw new CliException(
-                    ExitCodeConstants.Failure,
-                    $"Invalid agents: {invalid.Join(", ")}",
-                    title: "Invalid agents",
-                    hint: $"Valid agents: {sortedValid.Join(", ")}");
-            }
+            AgentValidation.EnsureValidAgents(options.Agents, validAgents);
 
             return options.Agents;
         }

@@ -1,102 +1,65 @@
-using System.CommandLine;
+using Skills.Arguments;
+using Skills.Commands.Add.Options;
+using Skills.Extensions;
 using Skills.Interaction;
+using Skills.Options;
 
 namespace Skills.Commands;
 
-internal sealed class AddCommand(
-    IInteractionService interaction,
-    AddCommandExecutor executor,
-    CliExecutionContext executionContext)
-    : BaseCommand("add", "Add a skill from a source")
+internal sealed class AddCommand : Command
 {
-    private readonly Argument<string?> _sourceArgument = new("source")
+    public AddCommand() : base("add", "Add a skill from a source")
     {
-        Description = "Source to fetch skills from (e.g., owner/repo, URL, local path)",
-        Arity = ArgumentArity.ZeroOrOne
-    };
+        Arguments.Add(Opt<OptionalSourceArgument>.Instance);
+        Options.Add(Opt<GlobalOption>.Instance);
+        Options.Add(Opt<AgentOption>.Instance);
+        Options.Add(Opt<SkillOption>.Instance);
+        Options.Add(Opt<YesOption>.Instance);
+        Options.Add(Opt<AllOption>.Instance);
+        Options.Add(Opt<CopyOption>.Instance);
+        Options.Add(Opt<FullDepthOption>.Instance);
+        Options.Add(Opt<ListOption>.Instance);
 
-    private readonly Option<bool> _globalOption = new(CommonOptionNames.Global, "-g")
-    {
-        Description = "Install globally"
-    };
+        this.AddExamples(
+            "add owner/repo",
+            "add owner/repo --skill foo -a claude-code",
+            "add ./local-path --copy");
 
-    private readonly Option<string[]> _agentOption = new(CommonOptionNames.Agent, "-a")
-    {
-        Description = "Target agent(s)",
-        AllowMultipleArgumentsPerToken = true
-    };
-
-    private readonly Option<string[]> _skillOption = new(CommonOptionNames.Skill, "-s")
-    {
-        Description = "Skill name filter(s)",
-        AllowMultipleArgumentsPerToken = true
-    };
-
-    private readonly Option<bool> _yesOption = new(CommonOptionNames.Yes, "-y")
-    {
-        Description = "Skip prompts (non-interactive)"
-    };
-
-    private readonly Option<bool> _allOption = new(CommonOptionNames.All)
-    {
-        Description = "Install all skills to all agents"
-    };
-
-    private readonly Option<bool> _copyOption = new(CommonOptionNames.Copy)
-    {
-        Description = "Copy instead of symlinking"
-    };
-
-    private readonly Option<bool> _fullDepthOption = new(CommonOptionNames.FullDepth)
-    {
-        Description = "Full-depth clone"
-    };
-
-    private readonly Option<bool> _listOption = new(CommonOptionNames.List, "-l")
-    {
-        Description = "List available skills without installing"
-    };
-
-    protected override void Configure()
-    {
-        Arguments.Add(_sourceArgument);
-        Options.Add(_globalOption);
-        Options.Add(_agentOption);
-        Options.Add(_skillOption);
-        Options.Add(_yesOption);
-        Options.Add(_allOption);
-        Options.Add(_copyOption);
-        Options.Add(_fullDepthOption);
-        Options.Add(_listOption);
+        this.SetActionWithExceptionHandling(ExecuteAsync);
     }
 
-    protected override async Task<CommandResult> ExecuteAsync(
+    private static async Task<int> ExecuteAsync(
+        ICommandServices services,
         ParseResult parseResult,
         CancellationToken cancellationToken)
     {
+        var interaction = services.GetRequiredService<IInteractionService>();
+        var executor = services.GetRequiredService<AddCommandExecutor>();
+        var executionContext = services.GetRequiredService<CliExecutionContext>();
+
         var options = ParseOptions(parseResult);
 
         if (string.IsNullOrWhiteSpace(options.Source))
         {
             interaction.WriteError("Missing required argument: source");
             interaction.WriteLine($"Usage: {executionContext.CommandName} add <source> [options]");
-            return new CommandResult.Failure(ExitCodeConstants.Failure);
+            return ExitCodeConstants.Failure;
         }
 
         return await executor.RunAsync(options, cancellationToken);
     }
 
-    private AddCommandOptions ParseOptions(ParseResult parseResult)
+    private static AddCommandOptions ParseOptions(ParseResult parseResult)
     {
-        var source = parseResult.GetValue(_sourceArgument);
-        var global = parseResult.GetValue(_globalOption);
-        var agents = parseResult.GetValue(_agentOption) ?? [];
-        var skills = parseResult.GetValue(_skillOption) ?? [];
-        var yes = parseResult.GetValue(_yesOption);
-        var all = parseResult.GetValue(_allOption);
-        var copy = parseResult.GetValue(_copyOption);
-        var fullDepth = parseResult.GetValue(_fullDepthOption);
-        var list = parseResult.GetValue(_listOption);
+        var source = parseResult.GetValue(Opt<OptionalSourceArgument>.Instance);
+        var global = parseResult.GetValue(Opt<GlobalOption>.Instance);
+        var agents = parseResult.GetValue(Opt<AgentOption>.Instance) ?? [];
+        var skills = parseResult.GetValue(Opt<SkillOption>.Instance) ?? [];
+        var yes = parseResult.GetValue(Opt<YesOption>.Instance);
+        var all = parseResult.GetValue(Opt<AllOption>.Instance);
+        var copy = parseResult.GetValue(Opt<CopyOption>.Instance);
+        var fullDepth = parseResult.GetValue(Opt<FullDepthOption>.Instance);
+        var list = parseResult.GetValue(Opt<ListOption>.Instance);
 
         if (all)
         {

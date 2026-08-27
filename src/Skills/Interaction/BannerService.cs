@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text;
 using Skills.Install;
-using Spectre.Console;
 
 namespace Skills.Interaction;
 
@@ -154,7 +153,7 @@ internal sealed class BannerService(
 
     private bool ShouldSkip()
     {
-        if (context.IsJsonOutput)
+        if (!interaction.IsHumanReadable)
         {
             return true;
         }

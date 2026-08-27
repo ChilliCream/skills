@@ -9,6 +9,21 @@ namespace Skills.Interaction;
 /// </summary>
 internal interface IInteractionService
 {
+    /// <summary>
+    /// True while the run is rendering for a person (the default). False once <see
+    /// cref="SetOutputFormat"/> has switched the run to a machine-readable format, at which point
+    /// the write methods below drop their output instead of mixing it into that format.
+    /// </summary>
+    bool IsHumanReadable { get; }
+
+    /// <summary>
+    /// Sets the run's output format: a machine-readable format, or <see langword="null"/> for
+    /// human-readable. Callers resolve this from the current invocation's own parse result on
+    /// every command, not just once, so a format set for one invocation of a shared, long-lived
+    /// service instance never leaks into the next.
+    /// </summary>
+    void SetOutputFormat(OutputFormat? format);
+
     void WriteLine(string text = "");
 
     void WriteMarkupLine(string markup);

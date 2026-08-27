@@ -1,10 +1,14 @@
 using System.Collections.Immutable;
+using Skills;
 using Skills.Interaction;
+using Skills.Tests.Commands;
+using Spectre.Console;
 using Spectre.Console.Testing;
 using Xunit;
 
 namespace Skills.Tests.Interaction;
 
+[Collection(CommandTestCollection.Name)]
 public class ConsoleInteractionServiceTests
 {
     private static TestConsole CreateInteractiveConsole()
@@ -13,6 +17,177 @@ public class ConsoleInteractionServiceTests
         console.Profile.Capabilities.Interactive = true;
         console.Profile.Capabilities.Ansi = true;
         return console;
+    }
+
+    [Fact]
+    public void IsHumanReadable_Should_Be_True_Before_SetOutputFormat_Is_Called()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+
+        Assert.True(service.IsHumanReadable);
+    }
+
+    [Fact]
+    public void IsHumanReadable_Should_Be_False_After_SetOutputFormat_Is_Called()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+
+        service.SetOutputFormat(OutputFormat.Json);
+
+        Assert.False(service.IsHumanReadable);
+    }
+
+    [Fact]
+    public void WriteMarkupLine_Should_Write_Nothing_When_Output_Format_Is_Json()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+        service.SetOutputFormat(OutputFormat.Json);
+
+        service.WriteMarkupLine("[red]should not appear[/]");
+
+        Assert.Equal("", console.Output);
+    }
+
+    [Fact]
+    public void WriteLine_Should_Write_Nothing_When_Output_Format_Is_Json()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+        service.SetOutputFormat(OutputFormat.Json);
+
+        service.WriteLine("should not appear");
+
+        Assert.Equal("", console.Output);
+    }
+
+    [Fact]
+    public void WriteError_Should_Write_To_Stderr_When_Output_Format_Is_Json()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+        service.SetOutputFormat(OutputFormat.Json);
+
+        var originalError = Console.Error;
+        var stderr = new StringWriter();
+        Console.SetError(stderr);
+        try
+        {
+            service.WriteError("should reach stderr");
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
+
+        Assert.Equal("", console.Output);
+        Assert.Contains("should reach stderr", stderr.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WriteError_Should_Write_To_ErrorConsole_Not_Stdout_Console_When_Human_Readable()
+    {
+        // Human-readable mode must keep the same stream separation as machine-readable mode: the
+        // error text goes to the stderr-bound console, never the stdout one, so scripts that split
+        // the two streams still see it.
+        using var console = new TestConsole();
+        using var errorConsole = new TestConsole();
+        var service = new ConsoleInteractionService(console, errorConsole);
+
+        service.WriteError("boom");
+
+        Assert.Equal("", console.Output);
+        Assert.Contains("boom", errorConsole.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WriteErrorPanel_Should_Write_To_ErrorConsole_Not_Stdout_Console_When_Human_Readable()
+    {
+        using var console = new TestConsole();
+        using var errorConsole = new TestConsole();
+        var service = new ConsoleInteractionService(console, errorConsole);
+
+        service.WriteErrorPanel("Title", "message", "tip");
+
+        Assert.Equal("", console.Output);
+        Assert.Contains("Title", errorConsole.Output, StringComparison.Ordinal);
+        Assert.Contains("message", errorConsole.Output, StringComparison.Ordinal);
+        Assert.Contains("tip", errorConsole.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WriteErrorPanel_Should_Write_Plain_Text_To_Stderr_When_Output_Format_Is_Json()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+        service.SetOutputFormat(OutputFormat.Json);
+
+        var originalError = Console.Error;
+        var stderr = new StringWriter();
+        Console.SetError(stderr);
+        try
+        {
+            service.WriteErrorPanel("Title", "message", "tip");
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
+
+        Assert.Equal("", console.Output);
+        var text = stderr.ToString();
+        Assert.Contains("Title", text, StringComparison.Ordinal);
+        Assert.Contains("message", text, StringComparison.Ordinal);
+        Assert.Contains("tip", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void WriteRenderable_Should_Write_Nothing_When_Output_Format_Is_Json_And_Renderable_Is_Markup()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+        service.SetOutputFormat(OutputFormat.Json);
+
+        service.WriteRenderable(new Markup("should not appear"));
+
+        Assert.Equal("", console.Output);
+    }
+
+    [Fact]
+    public void WriteRenderable_Should_Throw_When_Output_Format_Is_Json_And_Renderable_Is_Not_Text()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+        service.SetOutputFormat(OutputFormat.Json);
+
+        Assert.Throws<ExitException>(() => service.WriteRenderable(new Grid()));
+    }
+
+    [Fact]
+    public void IsHumanReadable_Should_Be_True_Again_After_SetOutputFormat_Is_Called_With_Null()
+    {
+        // A shared, long-lived service instance (an embedding host reuses one across invocations)
+        // must be resettable back to human-readable rather than staying stuck once JSON is set.
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+        service.SetOutputFormat(OutputFormat.Json);
+
+        service.SetOutputFormat(null);
+
+        Assert.True(service.IsHumanReadable);
+    }
+
+    [Fact]
+    public void WriteMarkupLine_Should_Write_When_Output_Format_Is_Unset()
+    {
+        using var console = new TestConsole();
+        var service = new ConsoleInteractionService(console);
+
+        service.WriteMarkupLine("[red]hello[/]");
+
+        Assert.Contains("hello", console.Output, StringComparison.Ordinal);
     }
 
     [Fact]

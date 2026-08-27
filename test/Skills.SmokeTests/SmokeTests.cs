@@ -36,6 +36,7 @@ public class SmokeTests
         Assert.Contains("add", result.StandardOutput);
         Assert.Contains("remove", result.StandardOutput);
         Assert.Contains("list", result.StandardOutput);
+        Assert.Contains("update", result.StandardOutput);
         Assert.Contains("init", result.StandardOutput);
     }
 
@@ -171,6 +172,6 @@ public class SmokeTests
         var dir =
             Path.GetDirectoryName(sourceFilePath)
             ?? throw new InvalidOperationException("Unable to resolve smoke test source directory.");
-        return Path.GetFullPath(Path.Combine(dir, "..", "..", "src", "Skills", "Skills.csproj"));
+        return Path.GetFullPath(Path.Combine(dir, "..", "..", "src", "Skills.Cli", "Skills.Cli.csproj"));
     }
 }

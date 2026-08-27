@@ -59,6 +59,32 @@ public class RemoveCommandTests : IDisposable
     }
 
     [Fact]
+    public async Task Remove_With_Invalid_Agent_Reports_Titled_Hint()
+    {
+        // Arrange
+        var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
+        ConfigureInstaller(installer);
+
+        // Act
+        var cmd = services.GetRequiredService<RemoveCommand>();
+        var parseResult = cmd.Parse(["--agent", "bogus", "--yes"]);
+        var exitCode = await parseResult.InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(1, exitCode);
+        var interaction = (TestInteractionService)services.GetRequiredService<IInteractionService>();
+        Assert.Contains(
+            interaction.Output,
+            line => line.Contains("Invalid agents", StringComparison.Ordinal)
+                && line.Contains("bogus", StringComparison.Ordinal));
+        Assert.Contains(
+            interaction.Output,
+            line => line.Contains("TIP:", StringComparison.Ordinal)
+                && line.Contains("Valid agents", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Remove_With_No_Skills_Reports_Empty()
     {
         // Arrange

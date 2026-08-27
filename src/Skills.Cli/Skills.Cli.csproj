@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <AssemblyName>skills</AssemblyName>
+    <RootNamespace>Skills.Cli</RootNamespace>
+    <RollForward>Major</RollForward>
+    <PublishAot>true</PublishAot>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <RuntimeIdentifiers>linux-x64;linux-arm64;linux-musl-x64;osx-x64;osx-arm64;win-x64;win-arm64</RuntimeIdentifiers>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <IsPackable>false</IsPackable>
+    <PackageId>Skills.Cli</PackageId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Skills/Skills.csproj" />
+  </ItemGroup>
+</Project>

@@ -61,6 +61,42 @@ public class RemoveCommandSnapshotTests : IDisposable
     }
 
     [Fact]
+    public async Task Remove_Help_Shows_Examples()
+    {
+        // Arrange
+        var services = BuildServices();
+
+        // Act
+        var output = await CommandSnapshot.RunAsync(services, "remove", "--help");
+
+        // Assert
+        output.MatchInlineSnapshot(
+            """
+            $ skills remove --help
+
+            Description:
+              Remove installed skills
+
+            Usage:
+              Skills.Tests remove [<skills>...] [options]
+
+            Arguments:
+              <skills>  Skill names to remove
+
+            Options:
+              -g, --global         Remove from global installation
+              -a, --agent <agent>  Target agent(s)
+              -y, --yes            Skip prompts (non-interactive)
+              --all                Remove all installed skills
+              -?, -h, --help       Show help and usage information
+
+            Example:
+              skills remove my-skill --yes
+              skills remove --all --yes
+            """);
+    }
+
+    [Fact]
     public async Task Remove_With_No_Skills()
     {
         // Arrange
@@ -160,7 +196,19 @@ public class RemoveCommandSnapshotTests : IDisposable
             $ skills remove alpha --agent bogus
             # exit 1
 
-            Invalid agents: bogus
+
+            ┌─Invalid agents───────────────────────────────────────────────────────────────┐
+            │ Invalid agents: bogus                                                        │
+            │                                                                              │
+            │ Valid agents: adal, aider-desk, amp, antigravity, augment, bob, claude-code, │
+            │ cline, codearts-agent, codebuddy, codemaker, codestudio, codex,              │
+            │ command-code, continue, cortex, crush, cursor, deepagents, devin, dexto,     │
+            │ droid, firebender, forgecode, gemini-cli, github-copilot, goose,             │
+            │ hermes-agent, iflow-cli, junie, kilo, kimi-cli, kiro-cli, kode, mcpjam,      │
+            │ mistral-vibe, mux, neovate, openclaw, opencode, openhands, pi, pochi, qoder, │
+            │ qwen-code, replit, roo, rovodev, tabnine-cli, trae, trae-cn, universal,      │
+            │ warp, windsurf, zencoder                                                     │
+            └──────────────────────────────────────────────────────────────────────────────┘
             """);
     }
 

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Skills.Commands;
+using Skills.Install;
 using Skills.Locking;
 using Skills.Net;
 using Skills.Tests.TestServices;
@@ -563,6 +564,33 @@ public class UpdateCommandTests : IDisposable
             line =>
                 line.Contains("Update available:", StringComparison.Ordinal)
                 && line.Contains("global-skill", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Update_Inside_Agent_Without_Scope_Flag_Does_Not_Prompt()
+    {
+        // Arrange: no -g/-p/-y and no redirected input, so only agent detection can keep this
+        // from blocking on a scope prompt (matching Remove's IsRunningInsideAgent check).
+        var services = CliTestHelper.CreateServiceProvider();
+        var systemEnvironment = (FakeSystemEnvironment)services.GetRequiredService<ISystemEnvironment>();
+        systemEnvironment.Env["CLAUDECODE"] = "1";
+
+        var interaction = services.GetRequiredService<TestInteractionService>();
+        var promptCalled = false;
+        interaction.OnSelect = (_, labels) =>
+        {
+            promptCalled = true;
+            return labels[0];
+        };
+
+        // Act
+        var cmd = services.GetRequiredService<UpdateCommand>();
+        var parseResult = cmd.Parse(Array.Empty<string>());
+        var exit = await parseResult.InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(0, exit);
+        Assert.False(promptCalled);
     }
 
     [Fact]

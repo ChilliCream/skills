@@ -53,6 +53,41 @@ public class UpdateCommandSnapshotTests : IDisposable
     };
 
     [Fact]
+    public async Task Update_Help_Shows_Examples()
+    {
+        // Arrange
+        var services = BuildServices();
+
+        // Act
+        var output = await CommandSnapshot.RunAsync(services, "update", "--help");
+
+        // Assert
+        output.MatchInlineSnapshot(
+            """
+            $ skills update --help
+
+            Description:
+              Check for skill updates.
+
+            Usage:
+              Skills.Tests update [<skills>...] [options]
+
+            Arguments:
+              <skills>  Optional skill names to update.
+
+            Options:
+              -g, --global    Update global skills only.
+              -p, --project   Update project skills only.
+              -y, --yes       Skip prompts (non-interactive)
+              -?, -h, --help  Show help and usage information
+
+            Example:
+              skills update
+              skills update -g
+            """);
+    }
+
+    [Fact]
     public async Task Update_Global_With_No_Skills()
     {
         // Arrange

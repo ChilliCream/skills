@@ -1,4 +1,3 @@
-using Spectre.Console;
 using Spectre.Console.Rendering;
 
 namespace Skills.Utils;
@@ -22,6 +21,8 @@ internal sealed class VimNavConsole(IAnsiConsole inner) : IAnsiConsole
     public void Clear(bool home) => inner.Clear(home);
 
     public void Write(IRenderable renderable) => inner.Write(renderable);
+
+    public void WriteAnsi(Action<AnsiWriter> action) => inner.WriteAnsi(action);
 }
 
 /// <summary>

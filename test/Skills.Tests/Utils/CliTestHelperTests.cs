@@ -8,6 +8,7 @@ using Skills.Plugins;
 using Skills.Skills;
 using Skills.Sources;
 using Skills.Tests.TestServices;
+using Skills.Utils;
 using Xunit;
 
 namespace Skills.Tests.Utils;

@@ -1,84 +1,62 @@
 using System.Collections.Immutable;
-using System.CommandLine;
 using System.Text.Json;
+using Skills.Commands.List.Options;
+using Skills.Extensions;
 using Skills.Install;
 using Skills.Interaction;
+using Skills.Options;
 using Skills.Paths;
 using Skills.Skills;
 using Skills.Utils;
-using Spectre.Console;
 
 namespace Skills.Commands;
 
-internal sealed class ListCommand(
-    ISkillInstaller installer,
-    AgentRegistry registry,
-    IInteractionService interaction,
-    IFileStore fileStore,
-    ISystemEnvironment systemEnvironment,
-    CliExecutionContext executionContext) : BaseCommand("list", "List installed skills")
+internal sealed class ListCommand : Command
 {
-    private readonly Option<bool> _globalOption = new(CommonOptionNames.Global, "-g")
+    public ListCommand() : base("list", "List installed skills")
     {
-        Description = "List global skills"
-    };
+        Options.Add(Opt<GlobalOption>.Instance);
+        Options.Add(Opt<AgentOption>.Instance);
+        Options.Add(Opt<OptionalOutputFormatOption>.Instance);
+        Options.Add(Opt<JsonOption>.Instance);
 
-    private readonly Option<string[]> _agentOption = new(CommonOptionNames.Agent, "-a")
-    {
-        Description = "Filter by agent",
-        AllowMultipleArgumentsPerToken = true
-    };
+        this.AddExamples("list", "list -g --json");
 
-    private readonly Option<string?> _formatOption = new(CommonOptionNames.FormatJson)
-    {
-        Description = "Output format (text|json)"
-    };
-
-    private readonly Option<bool> _jsonOption = new("--json")
-    {
-        Description = "Output as JSON (alias for --format json)"
-    };
-
-    protected override void Configure()
-    {
-        Options.Add(_globalOption);
-        Options.Add(_agentOption);
-        Options.Add(_formatOption);
-        Options.Add(_jsonOption);
+        this.SetActionWithExceptionHandling(ExecuteAsync);
     }
 
-    protected override async Task<CommandResult> ExecuteAsync(
+    private static async Task<int> ExecuteAsync(
+        ICommandServices services,
         ParseResult parseResult,
         CancellationToken cancellationToken)
     {
-        var global = parseResult.GetValue(_globalOption);
-        var agents = parseResult.GetValue(_agentOption) ?? [];
-        var format = parseResult.GetValue(_formatOption);
-        var jsonFlag = parseResult.GetValue(_jsonOption);
-        var jsonOutput = jsonFlag || format.EqualsOrdinalIgnoreCase("json");
+        var installer = services.GetRequiredService<ISkillInstaller>();
+        var registry = services.GetRequiredService<AgentRegistry>();
+        var interaction = services.GetRequiredService<IInteractionService>();
+        var fileStore = services.GetRequiredService<IFileStore>();
+        var systemEnvironment = services.GetRequiredService<ISystemEnvironment>();
 
-        executionContext.IsJsonOutput = jsonOutput;
+        var global = parseResult.GetValue(Opt<GlobalOption>.Instance);
+        var agents = parseResult.GetValue(Opt<AgentOption>.Instance) ?? [];
 
-        if (agents.Length > 0)
-        {
-            var valid = registry.AgentTypes;
-            var invalid = agents.Where(a => !valid.Contains(a)).ToList();
-            if (invalid.Count > 0)
-            {
-                interaction.WriteError($"Invalid agents: {invalid.Join(", ")}");
-                return new CommandResult.Failure(ExitCodeConstants.Failure);
-            }
-        }
+        AgentValidation.EnsureValidAgents(agents, registry.AgentTypes);
 
-        var skills = CollectInstalledSkills(installer, registry, agents, global, cancellationToken);
+        var skills = CollectInstalledSkills(
+            installer,
+            registry,
+            fileStore,
+            systemEnvironment,
+            agents,
+            global,
+            cancellationToken);
 
-        if (jsonOutput)
+        if (!interaction.IsHumanReadable)
         {
             var payload = skills.Select(s => s.ToJsonType(global, registry)).ToArray();
 
             var json = JsonSerializer.Serialize(payload, JsonSourceGenerationContext.Default.InstalledSkillJsonArray);
             Console.WriteLine(json);
-            return new CommandResult.Success();
+            return ExitCodeConstants.Success;
         }
 
         if (skills.Length == 0)
@@ -88,7 +66,7 @@ internal sealed class ListCommand(
             {
                 interaction.WriteDim("Try listing global skills with -g");
             }
-            return new CommandResult.Success();
+            return ExitCodeConstants.Success;
         }
 
         var scopeLabel = global ? "Global" : "Project";
@@ -127,12 +105,14 @@ internal sealed class ListCommand(
 
         interaction.WriteRenderable(grid);
 
-        return new CommandResult.Success();
+        return ExitCodeConstants.Success;
     }
 
-    private ImmutableArray<InstalledSkill> CollectInstalledSkills(
+    private static ImmutableArray<InstalledSkill> CollectInstalledSkills(
         ISkillInstaller installer,
         AgentRegistry registry,
+        IFileStore fileStore,
+        ISystemEnvironment systemEnvironment,
         string[] agents,
         bool global,
         CancellationToken cancellationToken)

@@ -136,4 +136,107 @@ public class ListCommandTests : IDisposable
         Assert.Contains("alpha", stdout);
         Assert.Contains("\"scope\"", stdout);
     }
+
+    [Fact]
+    public async Task List_With_Output_Alias_Writes_Same_Json_As_Format()
+    {
+        // Arrange
+        var canonical = Path.Combine(_workspace, ".agents", "skills");
+        Directory.CreateDirectory(canonical);
+        CreateSkill(canonical, "alpha");
+
+        var formatServices = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        ConfigureInstaller((TestInstaller)formatServices.GetRequiredService<ISkillInstaller>());
+        var formatCmd = formatServices.GetRequiredService<ListCommand>();
+        var formatParse = formatCmd.Parse(["--format", "json"]);
+        Assert.Equal(0, await formatParse.InvokeAsync(cancellationToken: TestContext.Current.CancellationToken));
+        var formatStdout = _capturedOut.ToString();
+
+        _capturedOut.GetStringBuilder().Clear();
+
+        var jsonFlagServices = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        ConfigureInstaller((TestInstaller)jsonFlagServices.GetRequiredService<ISkillInstaller>());
+        var jsonFlagCmd = jsonFlagServices.GetRequiredService<ListCommand>();
+        var jsonFlagParse = jsonFlagCmd.Parse(["--json"]);
+        Assert.Equal(0, await jsonFlagParse.InvokeAsync(cancellationToken: TestContext.Current.CancellationToken));
+        var jsonFlagStdout = _capturedOut.ToString();
+
+        _capturedOut.GetStringBuilder().Clear();
+
+        var outputServices = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        ConfigureInstaller((TestInstaller)outputServices.GetRequiredService<ISkillInstaller>());
+        var outputCmd = outputServices.GetRequiredService<ListCommand>();
+        var outputParse = outputCmd.Parse(["--output", "json"]);
+
+        // Act
+        var outputExitCode = await outputParse.InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(0, outputExitCode);
+        var outputStdout = _capturedOut.ToString();
+        Assert.Equal(formatStdout, outputStdout);
+        Assert.Equal(jsonFlagStdout, outputStdout);
+    }
+
+    [Fact]
+    public async Task List_With_Unknown_Output_Value_Fails_Parsing_Like_Format()
+    {
+        // Arrange
+        var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
+        ConfigureInstaller(installer);
+
+        // Act
+        var cmd = services.GetRequiredService<ListCommand>();
+        var parseResult = cmd.Parse(["--output", "josn"]);
+        var exitCode = await parseResult.InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(1, exitCode);
+        Assert.Contains(parseResult.Errors, e => e.Message.Contains("josn", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task List_With_Unknown_Format_Fails_Parsing()
+    {
+        // Arrange
+        var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
+        ConfigureInstaller(installer);
+
+        // Act
+        var cmd = services.GetRequiredService<ListCommand>();
+        var parseResult = cmd.Parse(["--format", "josn"]);
+        var exitCode = await parseResult.InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(1, exitCode);
+        Assert.Contains(parseResult.Errors, e => e.Message.Contains("josn", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task List_With_Invalid_Agent_Reports_Titled_Hint()
+    {
+        // Arrange
+        var services = CliTestHelper.CreateServiceProvider(workspace: _workspace, useRealFileStore: true);
+        var installer = (TestInstaller)services.GetRequiredService<ISkillInstaller>();
+        ConfigureInstaller(installer);
+
+        // Act
+        var cmd = services.GetRequiredService<ListCommand>();
+        var parseResult = cmd.Parse(["--agent", "bogus"]);
+        var exitCode = await parseResult.InvokeAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(1, exitCode);
+        var interaction = (TestInteractionService)services.GetRequiredService<IInteractionService>();
+        Assert.Contains(
+            interaction.Output,
+            line => line.Contains("Invalid agents", StringComparison.Ordinal)
+                && line.Contains("bogus", StringComparison.Ordinal));
+        Assert.Contains(
+            interaction.Output,
+            line => line.Contains("TIP:", StringComparison.Ordinal)
+                && line.Contains("Valid agents", StringComparison.Ordinal));
+    }
 }

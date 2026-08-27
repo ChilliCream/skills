@@ -2,14 +2,20 @@ using System.Collections.Immutable;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using Skills.Utils;
-using Spectre.Console;
 using Spectre.Console.Rendering;
 
 namespace Skills.Interaction;
 
-internal sealed class ConsoleInteractionService(IAnsiConsole? console = null) : IInteractionService
+internal sealed class ConsoleInteractionService(IAnsiConsole? console = null, IAnsiConsole? errorConsole = null)
+    : IInteractionService
 {
     private readonly IAnsiConsole _console = console ?? AnsiConsole.Console;
+
+    // Errors render through a console bound to stderr, not the stdout one above, so scripts that
+    // separate the two streams (e.g. `skills add foo 2>errors.log`) still see errors even though
+    // everything else in human-readable mode writes to stdout.
+    private readonly IAnsiConsole _errorConsole = errorConsole
+        ?? AnsiConsole.Create(new AnsiConsoleSettings { Out = new AnsiConsoleOutput(Console.Error) });
 
     // The multi-select list prompts also accept Vim-style j/k for down/up. The single-select prompt
     // enables search (letters are query text there), so it keeps the plain console below.
@@ -20,28 +26,79 @@ internal sealed class ConsoleInteractionService(IAnsiConsole? console = null) : 
     private const string MultiSelectInstructions =
         "[grey](Press [blue]<space>[/] to select, then [green]<enter>[/] to confirm - use [blue]j/k[/] or arrows to move)[/]";
 
+    private OutputFormat? _outputFormat;
+
+    public bool IsHumanReadable => _outputFormat is null;
+
+    public void SetOutputFormat(OutputFormat? format)
+    {
+        _outputFormat = format;
+    }
+
     public void WriteLine(string text = "")
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _console.WriteLine(text);
     }
 
     public void WriteMarkupLine(string markup)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _console.MarkupLine(markup);
     }
 
     public void WriteRenderable(IRenderable renderable)
     {
-        _console.Write(renderable);
+        if (IsHumanReadable)
+        {
+            _console.Write(renderable);
+            return;
+        }
+
+        // Plain text has no layout to corrupt a machine-readable format, so it is dropped quietly.
+        // Anything else (a grid, a panel, ...) is a UI element that has no business rendering
+        // outside human-readable mode, so surface the mistake instead of writing it anyway.
+        if (renderable is Text or Paragraph or Markup)
+        {
+            return;
+        }
+
+        throw new ExitException("Cannot render this output while the run is in machine-readable mode.");
     }
 
     public void WriteError(string message)
     {
-        _console.MarkupLineInterpolated($"[red]{message}[/]");
+        if (!IsHumanReadable)
+        {
+            Console.Error.WriteLine(message);
+            return;
+        }
+
+        _errorConsole.MarkupLineInterpolated($"[red]{message}[/]");
     }
 
     public void WriteErrorPanel(string title, string message, string? tip = null)
     {
+        if (!IsHumanReadable)
+        {
+            Console.Error.WriteLine(title);
+            Console.Error.WriteLine(message);
+            if (tip is not null)
+            {
+                Console.Error.WriteLine(tip);
+            }
+
+            return;
+        }
+
         var content = new StringBuilder();
         content.Append($"[red]{Markup.Escape(message)}[/]");
         if (tip is not null)
@@ -51,8 +108,8 @@ internal sealed class ConsoleInteractionService(IAnsiConsole? console = null) : 
             content.Append($"[dim]{Markup.Escape(tip)}[/]");
         }
 
-        WriteLine();
-        _console.Write(
+        _errorConsole.WriteLine();
+        _errorConsole.Write(
             new Panel(new Markup(content.ToString()))
                 .Header($"[bold red]{Markup.Escape(title)}[/]")
                 .BorderColor(Color.Red)
@@ -61,16 +118,31 @@ internal sealed class ConsoleInteractionService(IAnsiConsole? console = null) : 
 
     public void WriteWarning(string message)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _console.MarkupLineInterpolated($"[yellow]{message}[/]");
     }
 
     public void WriteSuccess(string message)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _console.MarkupLineInterpolated($"[green]{message}[/]");
     }
 
     public void WriteDim(string text)
     {
+        if (!IsHumanReadable)
+        {
+            return;
+        }
+
         _console.MarkupLineInterpolated($"[dim]{text}[/]");
     }
 
@@ -223,6 +295,7 @@ internal sealed class ConsoleInteractionService(IAnsiConsole? console = null) : 
             return [];
         }
 
+        prompt.DefaultValue = -1;
         prompt.UseConverter(handle => Markup.Escape(handle >= 0 ? label(values[handle]) : headers[-handle - 1]));
 
         var selected = await ShowRequiringSelectionAsync(prompt, cancellationToken);

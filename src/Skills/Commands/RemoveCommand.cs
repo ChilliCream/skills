@@ -1,90 +1,63 @@
 using System.Collections.Immutable;
-using System.CommandLine;
+using Skills.Commands.Remove.Arguments;
+using Skills.Commands.Remove.Options;
+using Skills.Extensions;
 using Skills.Install;
 using Skills.Interaction;
 using Skills.Locking;
+using Skills.Options;
 using Skills.Paths;
 using Skills.Skills;
 using Skills.Utils;
 
 namespace Skills.Commands;
 
-internal sealed class RemoveCommand(
-    ISkillInstaller installer,
-    AgentRegistry registry,
-    IInteractionService interaction,
-    IRemoveCommandPrompter prompter,
-    IProjectLockFile projectLock,
-    IGlobalLockFile globalLock,
-    AgentEnvironment agentEnvironment,
-    IFileStore fileStore,
-    ISystemEnvironment systemEnvironment,
-    ConsoleEnvironment consoleEnvironment) : BaseCommand("remove", "Remove installed skills")
+internal sealed class RemoveCommand : Command
 {
-    private readonly Argument<string[]> _skillsArgument = new("skills")
+    public RemoveCommand() : base("remove", "Remove installed skills")
     {
-        Description = "Skill names to remove",
-        Arity = ArgumentArity.ZeroOrMore
-    };
+        Arguments.Add(Opt<SkillsArgument>.Instance);
+        Options.Add(Opt<GlobalOption>.Instance);
+        Options.Add(Opt<AgentOption>.Instance);
+        Options.Add(Opt<YesOption>.Instance);
+        Options.Add(Opt<AllOption>.Instance);
 
-    private readonly Option<bool> _globalOption = new(CommonOptionNames.Global, "-g")
-    {
-        Description = "Remove from global installation"
-    };
+        this.AddExamples("remove my-skill --yes", "remove --all --yes");
 
-    private readonly Option<string[]> _agentOption = new(CommonOptionNames.Agent, "-a")
-    {
-        Description = "Target agent(s)",
-        AllowMultipleArgumentsPerToken = true
-    };
-
-    private readonly Option<bool> _yesOption = new(CommonOptionNames.Yes, "-y")
-    {
-        Description = "Skip prompts (non-interactive)"
-    };
-
-    private readonly Option<bool> _allOption = new(CommonOptionNames.All)
-    {
-        Description = "Remove all installed skills"
-    };
-
-    protected override void Configure()
-    {
-        Arguments.Add(_skillsArgument);
-        Options.Add(_globalOption);
-        Options.Add(_agentOption);
-        Options.Add(_yesOption);
-        Options.Add(_allOption);
+        this.SetActionWithExceptionHandling(ExecuteAsync);
     }
 
-    protected override async Task<CommandResult> ExecuteAsync(
+    private static async Task<int> ExecuteAsync(
+        ICommandServices services,
         ParseResult parseResult,
         CancellationToken cancellationToken)
     {
-        var requestedSkills = parseResult.GetValue(_skillsArgument) ?? [];
-        var global = parseResult.GetValue(_globalOption);
-        var agents = parseResult.GetValue(_agentOption) ?? [];
-        var yes = parseResult.GetValue(_yesOption);
-        var all = parseResult.GetValue(_allOption);
+        var installer = services.GetRequiredService<ISkillInstaller>();
+        var registry = services.GetRequiredService<AgentRegistry>();
+        var interaction = services.GetRequiredService<IInteractionService>();
+        var prompter = services.GetRequiredService<IRemoveCommandPrompter>();
+        var projectLock = services.GetRequiredService<IProjectLockFile>();
+        var globalLock = services.GetRequiredService<IGlobalLockFile>();
+        var agentEnvironment = services.GetRequiredService<AgentEnvironment>();
+        var fileStore = services.GetRequiredService<IFileStore>();
+        var systemEnvironment = services.GetRequiredService<ISystemEnvironment>();
+        var consoleEnvironment = services.GetRequiredService<ConsoleEnvironment>();
 
-        if (agents.Length > 0)
-        {
-            var valid = registry.AgentTypes;
-            var invalid = agents.Where(a => !valid.Contains(a)).ToList();
-            if (invalid.Count > 0)
-            {
-                interaction.WriteError($"Invalid agents: {invalid.Join(", ")}");
-                return new CommandResult.Failure(ExitCodeConstants.Failure);
-            }
-        }
+        var requestedSkills = parseResult.GetValue(Opt<SkillsArgument>.Instance) ?? [];
+        var global = parseResult.GetValue(Opt<GlobalOption>.Instance);
+        var agents = parseResult.GetValue(Opt<AgentOption>.Instance) ?? [];
+        var yes = parseResult.GetValue(Opt<YesOption>.Instance);
+        var all = parseResult.GetValue(Opt<AllOption>.Instance);
+
+        AgentValidation.EnsureValidAgents(agents, registry.AgentTypes);
 
         var cwd = systemEnvironment.CurrentDirectory;
-        var installed = CollectInstalledSkills(installer, registry, global);
+        var installed = CollectInstalledSkills(installer, registry, fileStore, cwd, global);
 
         if (installed.Length == 0)
         {
             interaction.WriteWarning("No skills found to remove.");
-            return new CommandResult.Success();
+            return ExitCodeConstants.Success;
         }
 
         var nonInteractive =
@@ -102,13 +75,13 @@ internal sealed class RemoveCommand(
             if (selected.Length == 0)
             {
                 interaction.WriteDim($"No matching skills found for: {requestedSkills.Join(", ")}");
-                return new CommandResult.Success();
+                return ExitCodeConstants.Success;
             }
         }
         else if (nonInteractive)
         {
             interaction.WriteDim("No skills specified for removal.");
-            return new CommandResult.Success();
+            return ExitCodeConstants.Success;
         }
         else
         {
@@ -116,7 +89,7 @@ internal sealed class RemoveCommand(
             if (selected.Length == 0)
             {
                 interaction.WriteWarning("Removal cancelled");
-                return new CommandResult.Cancelled();
+                return ExitCodeConstants.Cancelled;
             }
         }
 
@@ -128,7 +101,7 @@ internal sealed class RemoveCommand(
             if (!confirmed)
             {
                 interaction.WriteWarning("Removal cancelled");
-                return new CommandResult.Cancelled();
+                return ExitCodeConstants.Cancelled;
             }
         }
 
@@ -152,12 +125,12 @@ internal sealed class RemoveCommand(
                             continue;
                         }
 
-                        deletedAnything |= TryDeletePath(installPath);
+                        deletedAnything |= TryDeletePath(fileStore, installPath);
                     }
 
-                    if (!IsCanonicalStillUsed(installer, registry, skillName, global, cwd, targetAgents))
+                    if (!IsCanonicalStillUsed(installer, registry, fileStore, skillName, global, cwd, targetAgents))
                     {
-                        deletedAnything |= TryDeletePath(canonicalPath);
+                        deletedAnything |= TryDeletePath(fileStore, canonicalPath);
                     }
 
                     var lockEntryRemoved = global
@@ -196,18 +169,19 @@ internal sealed class RemoveCommand(
                 interaction.WriteError($"  {skill}: {error}");
             }
 
-            return new CommandResult.Failure(ExitCodeConstants.Failure);
+            return ExitCodeConstants.Failure;
         }
 
-        return new CommandResult.Success();
+        return ExitCodeConstants.Success;
     }
 
-    private ImmutableArray<string> CollectInstalledSkills(
+    private static ImmutableArray<string> CollectInstalledSkills(
         ISkillInstaller installer,
         AgentRegistry registry,
+        IFileStore fileStore,
+        string cwd,
         bool global)
     {
-        var cwd = systemEnvironment.CurrentDirectory;
         var skills = new HashSet<string>(StringComparer.Ordinal);
         var directoriesToScan = new HashSet<string>(SafePath.Comparer)
         {
@@ -245,9 +219,10 @@ internal sealed class RemoveCommand(
     /// Returns <see langword="true"/> if at least one agent outside <paramref name="removedAgents"/>
     /// still has an install path for the skill, meaning the canonical directory must be kept.
     /// </summary>
-    private bool IsCanonicalStillUsed(
+    private static bool IsCanonicalStillUsed(
         ISkillInstaller installer,
         AgentRegistry registry,
+        IFileStore fileStore,
         string skillName,
         bool global,
         string cwd,
@@ -276,7 +251,7 @@ internal sealed class RemoveCommand(
     /// Returns <see langword="false"/> when nothing existed at <paramref name="path"/> or the
     /// best-effort deletion failed, so callers can report removal accurately.
     /// </summary>
-    private bool TryDeletePath(string path)
+    private static bool TryDeletePath(IFileStore fileStore, string path)
     {
         if (!fileStore.PathExists(path))
         {

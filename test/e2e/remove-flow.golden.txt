@@ -1,5 +1,5 @@
 $ skills remove
-Are you sure you want to remove 3 skill(s) [changelog-updater, commit-helper, pr-describer]? [
-y/n] (n): y
+Are you sure you want to remove 3 skill(s) [changelog-updater, commit-helper, pr-describer]?
+[y/n] (n): y
 Successfully removed 3 skill(s)
 $

@@ -295,6 +295,7 @@ internal sealed class ConsoleInteractionService(IAnsiConsole? console = null, IA
             return [];
         }
 
+        prompt.DefaultValue = -1;
         prompt.UseConverter(handle => Markup.Escape(handle >= 0 ? label(values[handle]) : headers[-handle - 1]));
 
         var selected = await ShowRequiringSelectionAsync(prompt, cancellationToken);
